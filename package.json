@@ -1,0 +1,11 @@
+{
+  "name": "flutter-llm-toolkit",
+  "version": "1.0.0",
+  "description": "Flutter/Dart agents, skills, patterns, and references for Claude Code",
+  "bin": {
+    "flutter-llm-toolkit": "install.js"
+  },
+  "engines": {
+    "node": ">=16.7.0"
+  }
+}
