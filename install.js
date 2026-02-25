@@ -20,6 +20,7 @@ const hasGlobal = has('--global', '-g');
 const hasCopy = has('--copy');
 const hasForce = has('--force', '-f');
 const hasHelp = has('--help', '-h');
+const hasUninstall = has('--uninstall');
 
 // Hidden backward-compat flags (no-ops)
 // --local / -l is the default scope, --link is the default mode
@@ -37,6 +38,7 @@ Options:
   -g, --global   Install to ~/.claude/ (default: current project ./.claude/)
       --copy     Copy files instead of symlinking
   -f, --force    Overwrite modified files without prompting
+      --uninstall  Remove all toolkit files from the target scope
   -h, --help     Show this help message
 
 Examples:
@@ -52,6 +54,13 @@ Examples:
 
   # Copy files instead of symlinking (e.g. for team sharing via git)
   ~/toolkits/flutter-llm-toolkit/install.js --copy
+
+  # Uninstall from a project
+  cd your-flutter-project
+  ~/toolkits/flutter-llm-toolkit/install.js --uninstall
+
+  # Uninstall globally
+  ~/toolkits/flutter-llm-toolkit/install.js --uninstall --global
 `);
   process.exit(0);
 }
@@ -71,7 +80,7 @@ const MANIFEST_VERSION = '1.0.0';
 const SKIP_PATTERNS = ['.DS_Store', '__pycache__', '.git'];
 
 // Safety check: don't install into the toolkit repo itself
-if (!hasGlobal && fs.realpathSync(process.cwd()) === fs.realpathSync(SCRIPT_DIR)) {
+if (!hasGlobal && !hasUninstall && fs.realpathSync(process.cwd()) === fs.realpathSync(SCRIPT_DIR)) {
   console.error('Error: Run this from your project directory, not from the toolkit repo.');
   console.error('  cd your-flutter-project');
   console.error(`  ${process.argv[1]}`);
@@ -701,9 +710,105 @@ function buildAndWriteManifest(newFiles, keep) {
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
 }
 
+// ── Uninstall ────────────────────────────────────────────────────────────────
+
+function uninstall() {
+  const targetLabel = hasGlobal
+    ? targetDir.replace(os.homedir(), '~')
+    : targetDir.replace(process.cwd(), '.');
+
+  console.log(`\nUninstalling from ${targetLabel}\n`);
+
+  const oldManifest = readManifest();
+  if (!oldManifest) {
+    console.log('  Nothing to uninstall (no manifest found).');
+    console.log('');
+    return;
+  }
+
+  const files = normalizeManifestFiles(oldManifest.files);
+  const fileKeys = Object.keys(files);
+
+  let removed = 0;
+  const dirsToCheck = new Set();
+  const protectedDirs = new Set(['agents', 'commands', 'skills', 'references']);
+
+  // Remove all tracked files
+  for (const rel of fileKeys) {
+    const full = path.join(targetDir, relToFsPath(rel));
+    try {
+      if (isSymlink(full) || fs.existsSync(full)) {
+        fs.unlinkSync(full);
+        removed++;
+      }
+    } catch (e) {
+      console.log(`  ${yellow}Warning:${reset} failed to remove ${rel}: ${e.message}`);
+    }
+    // Collect all ancestor directories for cleanup
+    let dir = path.dirname(full);
+    while (dir !== targetDir && dir.startsWith(targetDir)) {
+      dirsToCheck.add(dir);
+      dir = path.dirname(dir);
+    }
+  }
+
+  // Remove skill directory symlinks pointing into this toolkit
+  const skillsInstallDir = path.join(targetDir, 'skills');
+  if (fs.existsSync(skillsInstallDir)) {
+    for (const entry of fs.readdirSync(skillsInstallDir, { withFileTypes: true })) {
+      const full = path.join(skillsInstallDir, entry.name);
+      if (entry.isSymbolicLink() && symlinkPointsIntoScriptDir(full)) {
+        fs.unlinkSync(full);
+        removed++;
+        dirsToCheck.add(skillsInstallDir);
+      }
+    }
+  }
+
+  // Clean up empty directories (deepest first), skip top-level category dirs
+  const sorted = Array.from(dirsToCheck).sort((a, b) => b.length - a.length);
+  for (const dir of sorted) {
+    try {
+      const relDir = path.relative(targetDir, dir);
+      if (protectedDirs.has(relDir)) continue;
+      if (dir === targetDir) continue;
+      const entries = fs.readdirSync(dir);
+      if (entries.length === 0) {
+        fs.rmdirSync(dir);
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // Remove manifest
+  try {
+    fs.unlinkSync(manifestPath);
+    const entries = fs.readdirSync(manifestDir);
+    if (entries.length === 0) {
+      fs.rmdirSync(manifestDir);
+    }
+  } catch {
+    // ignore
+  }
+
+  if (removed > 0) {
+    console.log(`  ${green}Removed${reset} ${removed} file(s)`);
+  } else {
+    console.log('  Nothing to remove (files already cleaned up).');
+  }
+
+  console.log('');
+}
+
 // ── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
+  if (hasUninstall) {
+    uninstall();
+    return;
+  }
+
   const targetLabel = hasGlobal
     ? targetDir.replace(os.homedir(), '~')
     : targetDir.replace(process.cwd(), '.');
