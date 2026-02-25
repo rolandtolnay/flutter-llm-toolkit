@@ -199,7 +199,3 @@ For the specified target, gather the relevant code:
 - Suggestions are concrete: specific types/widgets named, not vague advice
 - No forced findings - if code is solid, say so
 - User has opportunity to provide context before changes
-
-## Full Compiled Document
-
-For the complete guide with all principles expanded: `AGENTS.md`
