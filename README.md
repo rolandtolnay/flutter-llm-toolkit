@@ -6,7 +6,7 @@
 
 A curated extension pack for Flutter developers using Claude Code. It provides three things: skills that review and improve your Dart code against established quality guidelines, agents that run structural analysis as part of larger workflows, and reference docs that teach Claude your project's patterns so it writes code the way you would.
 
-Built as a companion to [llm-toolkit](https://github.com/rolandtolnay/llm-toolkit). Where llm-toolkit covers general workflows, mental frameworks, and prompt engineering, this toolkit focuses specifically on Flutter/Dart code quality — the patterns, anti-patterns, and structural principles that separate maintainable Flutter apps from ones that fight you on every change.
+Built as a companion to [llm-toolkit](https://github.com/rolandtolnay/llm-toolkit). Where llm-toolkit covers general workflows, mental frameworks, and prompt engineering, this toolkit focuses specifically on Flutter/Dart code quality — the patterns, anti-patterns, and structural principles that separate maintainable Flutter apps from ones that fight you on every change. Reference docs assume Riverpod and hooks — the review and quality skills work with any state management approach, but some patterns won't apply if you use Bloc or Provider.
 
 ## What's Included
 
@@ -59,7 +59,7 @@ Guides and patterns that Claude loads as context when working in your project.
 
 ## Quick Start
 
-Requires Node.js 16.7+ and [Claude Code](https://docs.anthropic.com/en/docs/claude-code).
+Requires [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and Node.js.
 
 **1. Clone the toolkit** (once, anywhere you like):
 
@@ -74,9 +74,9 @@ cd your-flutter-project
 ~/toolkits/flutter-llm-toolkit/install.js
 ```
 
-This creates symlinks in `.claude/` pointing back to the toolkit. When you `git pull` in the toolkit repo, all your projects update automatically.
+This creates symlinks in `.claude/` pointing back to the toolkit. When you `git pull` in the toolkit repo, all your projects pick up changes automatically.
 
-**Install globally** (available across all projects):
+**Project scope** (default) installs into the current project's `.claude/` — use this when you want per-project control. **Global scope** installs into `~/.claude/` so all projects share the same toolkit:
 
 ```bash
 ~/toolkits/flutter-llm-toolkit/install.js --global
@@ -92,7 +92,20 @@ cd your-flutter-project
 ~/toolkits/flutter-llm-toolkit/install.js --copy
 ```
 
-This copies files instead of symlinking. Re-run to update.
+This copies files instead of symlinking. You won't get automatic updates — re-run the command to pull in new versions.
+
+If any copied files have local modifications, the installer prompts you to overwrite or keep each one. Use `--force` to overwrite all without prompting.
+
+</details>
+
+<details>
+<summary>Windows</summary>
+
+Symlinks require admin privileges on Windows. Use copy mode instead:
+
+```bash
+node install.js --copy
+```
 
 </details>
 
@@ -124,26 +137,38 @@ Claude fetches the latest guidelines, scans for anti-patterns (useState for load
 
 Claude explores your codebase — dependencies, architecture, patterns, naming conventions — and generates project instructions so future sessions understand your app from the start.
 
-**Extract your UI patterns into a portable skill:**
+## Updating
 
+**Symlink mode** (default): pull the latest in the toolkit repo. All linked projects update immediately.
+
+```bash
+cd ~/toolkits/flutter-llm-toolkit
+git pull
 ```
-/extract-ui-skill
+
+**Copy mode**: re-run the installer to copy updated files. Modified local copies are preserved unless you pass `--force`.
+
+```bash
+cd your-flutter-project
+~/toolkits/flutter-llm-toolkit/install.js --copy
 ```
 
-Claude catalogs your widgets, screen patterns, spacing constants, and theme usage, then generates a skill file that any Claude Code session can use to build UI consistent with your app.
+Files removed from the toolkit are cleaned up automatically on the next install run.
 
-## How These Fit Together
+## Uninstalling
 
-A typical workflow in a Flutter project:
+Remove all toolkit files from a project or global scope:
 
-1. `/make-claude-md-flutter` to set up project context (once)
-2. Build features with Claude Code — reference docs provide pattern awareness automatically
-3. Ask for a review — the senior review skill catches structural issues
-4. Code quality and simplification skills clean up the implementation
-5. `/learn-flutter` to capture any new patterns back into the shared guidelines
-6. `/extract-ui-skill` or `/extract-pattern` to make project conventions portable
+```bash
+cd your-flutter-project
+~/toolkits/flutter-llm-toolkit/install.js --uninstall
+```
 
-The skills handle code quality at different levels: `flutter-code-quality` enforces conventions and anti-patterns, `flutter-code-simplification` improves readability, and `flutter-senior-review` catches architectural issues that compound over time.
+```bash
+~/toolkits/flutter-llm-toolkit/install.js --uninstall --global
+```
+
+This removes only files the toolkit installed — your own `.claude/` files are untouched.
 
 ## License
 
