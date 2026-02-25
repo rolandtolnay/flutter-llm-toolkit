@@ -25,10 +25,9 @@ You receive:
 
 ### Pass 1: Code Quality Patterns
 
-Fetch guidelines first (never WebFetch — it summarizes instead of returning raw content):
-```bash
-gh api /gists/edf9ea7d5adf218f45accb3411f0627c \
-  --jq '.files["flutter-code-quality-guidelines.md"].content'
+Fetch guidelines first:
+```
+Read .claude/references/code_quality.md
 ```
 
 Replace anti-patterns:
@@ -84,7 +83,7 @@ Apply `flutter-code-simplification` skill principles:
 ## Process
 
 1. **Identify targets** - Parse scope to find modified .dart files
-2. **Fetch guidelines** - Fetch guidelines via `gh api`
+2. **Read guidelines** - Read `.claude/references/code_quality.md`
 3. **Refactor Pass 1** - Apply code quality patterns
 4. **Refactor Pass 2** - Apply widget organization rules
 5. **Refactor Pass 3** - Apply folder structure conventions
@@ -139,7 +138,7 @@ Code already follows guidelines.
 
 <success_criteria>
 - All functionality preserved — no behavior changes
-- Guidelines fetched from gist via `gh api`
+- Guidelines read from `.claude/references/code_quality.md`
 - All target .dart files refactored through four passes
 - Verification passes (`fvm flutter analyze` + `fvm flutter test`)
 </success_criteria>

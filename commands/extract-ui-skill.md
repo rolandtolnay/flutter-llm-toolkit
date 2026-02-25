@@ -65,9 +65,9 @@ mkdir -p .claude/skills/implement-ui/references
 <existing_docs_check>
 If available, use existing documentation as authoritative baseline:
 
-1. Use Glob for `docs/code_quality.md` and Read it if present
+1. Use Glob for `.claude/references/code_quality.md` and Read it if present
 
-During synthesis, prefer documented guidance from `docs/code_quality.md` where applicable and use extraction primarily to:
+During synthesis, prefer documented guidance from `.claude/references/code_quality.md` where applicable and use extraction primarily to:
 - fill gaps,
 - add concrete references/examples,
 - and update any stale references.
@@ -349,7 +349,7 @@ After all agents complete:
 
 During merge:
 - Normalize all file paths to be repo-relative (no absolute paths).
-- Prefer patterns consistent with `docs/code_quality.md` where relevant; flag disagreements explicitly.
+- Prefer patterns consistent with `.claude/references/code_quality.md` where relevant; flag disagreements explicitly.
 
 Use Write to save combined analysis:
 ```

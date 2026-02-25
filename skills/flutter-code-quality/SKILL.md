@@ -15,21 +15,20 @@ Comprehensive guidelines for Flutter/Dart code quality, widget organization, and
 
 ## How It Works
 
-1. Fetch flutter-code-quality-guidelines.md from the gist URL below (always fresh)
+1. Read code quality guidelines from the local reference file
 2. Apply embedded widget organization and folder structure rules
 3. Check files against all guidelines
 4. Output findings in terse `file:line` format
 
-## Code Quality Guidelines (Remote)
+## Code Quality Guidelines
 
-Fetch fresh guidelines before each review:
+Read guidelines before each review:
 
-```bash
-gh api /gists/edf9ea7d5adf218f45accb3411f0627c \
-  --jq '.files["flutter-code-quality-guidelines.md"].content'
+```
+Read .claude/references/code_quality.md
 ```
 
-Never use WebFetch for gist content — it summarizes instead of returning raw text. Contains: anti-patterns, widget patterns, state management, collections, hooks, theme/styling, etc.
+Contains: anti-patterns, widget patterns, state management, collections, hooks, theme/styling, etc.
 
 ## Widget Organization Guidelines (Embedded)
 
@@ -103,13 +102,13 @@ lib/features/
 
 When reviewing code, apply in this order:
 
-1. **Code Quality Patterns** (from fetched gist) - Anti-patterns, idioms, provider patterns
+1. **Code Quality Patterns** (from `.claude/references/code_quality.md`) - Anti-patterns, idioms, provider patterns
 2. **Widget Organization** (above) - Build structure, extraction rules, async UX
 3. **Folder Structure** (above) - File placement, feature boundaries
 
 ## Anti-Patterns Quick Reference
 
-Flag these patterns (details in fetched guidelines):
+Flag these patterns (details in `.claude/references/code_quality.md`):
 
 - `useState<bool>` for loading states
 - Manual try-catch in provider actions

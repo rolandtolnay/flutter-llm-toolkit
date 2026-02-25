@@ -33,9 +33,7 @@ Specialized subagents for the Task tool, designed to run as part of milestone wo
 
 Slash commands for Flutter-specific workflows.
 
-- **`/sync-flutter-docs`** — Sync Flutter reference docs and optionally install skills from this toolkit into a project.
-  - Use when: setting up a new Flutter project or updating references.
-- **`/learn-flutter`** — Analyze recent code changes and update the remote coding principles gist.
+- **`/learn-flutter`** — Analyze recent code changes and update the local coding principles file.
   - Use when: after completing implementation work, to capture new patterns.
 - **`/extract-ui-skill`** — Extract UI patterns from the current project into a reusable implement-ui skill.
   - Use when: capturing widget catalogs, screen patterns, and spacing conventions as portable documentation.

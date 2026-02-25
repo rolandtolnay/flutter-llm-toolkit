@@ -1,11 +1,13 @@
 ---
-description: Learn from recent Flutter/Dart code changes and update the remote coding principles gist. Use after completing Flutter implementation work.
+description: Learn from recent Flutter/Dart code changes and update the local coding principles file. Use after completing Flutter implementation work.
 argument-hint: [focus_instructions] [number] [commit_sha]
-allowed-tools: Bash, Read, Grep, Glob, Write
+allowed-tools: Bash, Read, Grep, Glob, Write, Edit
 ---
 
 <objective>
-Extract Flutter/Dart coding principles from code changes and append them to the remote GitHub Gist.
+Extract Flutter/Dart coding principles from code changes and append them to the local code quality guidelines file at `.claude/references/code_quality.md`.
+
+The file is symlinked to the toolkit repo — writes propagate to all projects automatically.
 </objective>
 
 <context>
@@ -19,11 +21,11 @@ $( git diff --stat 2>/dev/null | tail -5 )
 </context>
 
 <embedded_knowledge>
-<gist_details>
-- Gist ID: `edf9ea7d5adf218f45accb3411f0627c`
-- File name: `flutter-code-quality-guidelines.md`
-- Always use `gh api` for gist operations — never WebFetch (it summarizes instead of returning raw content)
-</gist_details>
+<guidelines_file>
+- Path: `.claude/references/code_quality.md`
+- This file is symlinked to the toolkit repo via `install.js`
+- Read with the Read tool, write with the Write tool
+</guidelines_file>
 
 <categories>
 Match principles to these categories (use existing section names exactly):
@@ -80,17 +82,15 @@ Follow LLM-optimized documentation format:
 <step name="preflight_checks">
 ## 1. Pre-flight Checks
 
-1. Verify GitHub CLI is authenticated:
-   ```bash
-   gh auth status
-   ```
-   If not authenticated, stop with: "GitHub CLI not authenticated. Run `gh auth login` first."
-
-2. Verify git repository exists:
+1. Verify git repository exists:
    ```bash
    git rev-parse --git-dir
    ```
    If not a repo, stop with: "Not a git repository."
+
+2. Verify the guidelines file exists:
+   Use Read to check `.claude/references/code_quality.md` exists.
+   If not found, stop with: "Guidelines file not found at `.claude/references/code_quality.md`. Run `install.js` from the flutter-llm-toolkit first."
 </step>
 
 <step name="parse_arguments">
@@ -109,14 +109,13 @@ Examples:
 - `learn-flutter 3 error handling` → 3 principles about error handling
 </step>
 
-<step name="fetch_current_gist">
-## 3. Fetch Current Gist
+<step name="read_current_guidelines">
+## 3. Read Current Guidelines
 
-Fetch the gist content using `gh api`:
+Read the guidelines file using the Read tool:
 
-```bash
-gh api /gists/edf9ea7d5adf218f45accb3411f0627c \
-  --jq '.files["flutter-code-quality-guidelines.md"].content'
+```
+Read(.claude/references/code_quality.md)
 ```
 
 Parse the content to:
@@ -172,7 +171,7 @@ Compare before/after in each hunk. Identify:
 Prioritize:
 1. Areas mentioned in focus instructions
 2. Reusable patterns, not implementation-specific details
-3. Patterns not already in the gist (skip duplicates)
+3. Patterns not already in the guidelines (skip duplicates)
 
 Consider: structure, naming, error handling, state management, API design, collections, widgets.
 </step>
@@ -190,37 +189,23 @@ Format each principle following the embedded format rules:
 
 No emphasis markers. No explanations. One line per rule.
 
-Match to the closest existing category from the gist.
+Match to the closest existing category from the guidelines.
 </step>
 
-<step name="update_gist">
-## 8. Update Gist
+<step name="update_guidelines">
+## 8. Update Guidelines File
 
-1. Write the complete updated gist content to a temp file (e.g., `/tmp/flutter-gist-update.md`)
-2. Build a JSON payload with `jq` and pipe to `gh api` via `--input -`:
-
-```bash
-jq -n --rawfile content /tmp/flutter-gist-update.md \
-  '{"files":{"flutter-code-quality-guidelines.md":{"content":$content}}}' | \
-  gh api -X PATCH /gists/edf9ea7d5adf218f45accb3411f0627c --input -
-```
-
-**Do NOT use** `-f "files[...][content]=@/path"` — the `@` file reference does not expand with `gh api -f` and uploads the literal string `@/path` instead.
-
-Insert new principles under their matching category sections.
-If a principle doesn't fit existing categories, add to the closest match.
-3. Clean up: `rm /tmp/flutter-gist-update.md`
+1. Read the current content of `.claude/references/code_quality.md`
+2. Insert new principles under their matching category sections
+3. If a principle doesn't fit existing categories, add to the closest match
+4. Write the complete updated content back using the Write tool
 </step>
 
 <step name="verify_update">
 ## 9. Verify Update
 
-1. Re-fetch the gist content via `gh api`:
-   ```bash
-   gh api /gists/edf9ea7d5adf218f45accb3411f0627c \
-     --jq '.files["flutter-code-quality-guidelines.md"].content'
-   ```
-2. Grep the output for a distinctive keyword from each new principle to confirm presence
+1. Re-read `.claude/references/code_quality.md` using the Read tool
+2. Confirm the new principles are present in the file
 3. Report what was added:
    - Number of principles added
    - Which categories were updated
@@ -231,7 +216,6 @@ If a principle doesn't fit existing categories, add to the closest match.
 <success_criteria>
 - [ ] Format follows LLM-optimized rules (terse, inline code, no emphasis markers)
 - [ ] No duplicate principles added
-- [ ] Gist updated via `jq --rawfile` piped to `gh api --input -` (not `-f files[...]=@path`)
-- [ ] Update verified by re-fetching via `gh api --jq` and grepping for new content
-- [ ] Gist fetched and updated via `gh api` (not WebFetch)
+- [ ] Guidelines read and written via Read/Write tools (no network calls)
+- [ ] Update verified by re-reading file and confirming new content
 </success_criteria>

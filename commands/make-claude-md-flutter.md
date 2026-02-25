@@ -138,11 +138,11 @@ Analyze screen implementation patterns:
 After exploration completes:
 
 1. **Check for Riverpod guide**
-   - Check `docs/RIVERPOD.md` or `docs/guides/RIVERPOD.md`
-   - If neither exists, use AskUserQuestion: "Riverpod guide not found under docs/. Should the CLAUDE.md omit the Riverpod patterns reference, or do you want to provide its location?"
+   - Check `.claude/references/riverpod.md` or `docs/guides/RIVERPOD.md`
+   - If neither exists, use AskUserQuestion: "Riverpod guide not found at `.claude/references/riverpod.md` or under docs/. Should the CLAUDE.md omit the Riverpod patterns reference, or do you want to provide its location?"
 
-2. **Check for docs/CODE_QUALITY.md**
-   - If missing, use AskUserQuestion: "docs/CODE_QUALITY.md not found. Should the CLAUDE.md omit the Code Quality reference, or do you want to provide its location?"
+2. **Check for .claude/references/code_quality.md**
+   - If missing, use AskUserQuestion: ".claude/references/code_quality.md not found. Should the CLAUDE.md omit the Code Quality reference, or do you want to provide its location?"
 
 3. **Check for docs/guides/UI_GUIDE.md**
    - If present, include reference in widget documentation
@@ -602,7 +602,7 @@ double calculateRefundAmount(
 - Implementing features without following existing patterns
 
 **Code Quality (commonly missed):**
-[DISCOVER: Extract 5-8 from docs/CODE_QUALITY.md if it exists, otherwise use these defaults]
+[DISCOVER: Extract 5-8 from .claude/references/code_quality.md if it exists, otherwise use these defaults]
 - Using mutable collection methods: use \`.sorted()\` not \`.toList()..sort()\`
 - Direct nullable callback invocation: use \`onDismiss?.call()\` not \`onDismiss!()\`
 - Forgetting to trim text input: always \`controller.text.trim()\` on capture
@@ -645,11 +645,11 @@ Skip testing:
 
 ## Riverpod Patterns
 
-[DISCOVER: Reference the Riverpod guide path found under docs/, e.g. @docs/RIVERPOD.md]
+[DISCOVER: Reference the Riverpod guide path, e.g. @.claude/references/riverpod.md]
 
 ## Code Quality Guidelines
 
-[DISCOVER: Reference the code quality guide path found under docs/, e.g. @docs/CODE_QUALITY.md]
+[DISCOVER: Reference the code quality guide path, e.g. @.claude/references/code_quality.md]
 
 ---
 

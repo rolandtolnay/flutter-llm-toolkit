@@ -13,7 +13,7 @@ The output is designed to be portable across Flutter projects as a reference for
 </objective>
 
 <execution_context>
-@references/patterns/ (existing pattern files — match their format)
+@.claude/references/patterns/ (existing pattern files — match their format)
 </execution_context>
 
 <context>
@@ -96,8 +96,7 @@ Do not proceed until you have a clear, unambiguous understanding of what to extr
 ## 2. Check Existing Patterns
 
 ```bash
-ls references/patterns/ 2>/dev/null
-ls docs/patterns/ 2>/dev/null
+ls .claude/references/patterns/ 2>/dev/null
 ```
 
 If a pattern file for this area already exists, use AskUserQuestion:
@@ -175,7 +174,7 @@ Thoroughness is more important than speed. Ask as many questions as needed to ac
 
 ## 5. Write Pattern File
 
-Default output path: `docs/patterns/[slug].md`. If this directory doesn't exist in the project, ask the user where to save.
+Default output path: `.claude/references/patterns/[slug].md`. Writes go through the symlink to the toolkit repo — patterns become shared across all projects.
 
 Synthesize agent findings into the LLM-optimized format and write the file directly:
 
