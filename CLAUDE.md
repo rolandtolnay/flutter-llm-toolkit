@@ -4,7 +4,7 @@ Flutter/Dart agents, skills, patterns, and references for Claude Code.
 
 ## Distribution
 
-Installed via `npx flutter-llm-toolkit`. The installer (`install.js`) copies or symlinks files into `~/.claude/` (global) or `.claude/` (local).
+Installed by cloning the repo and running `install.js`. The installer symlinks (default) or copies (`--copy`) files into `.claude/` (project, default) or `~/.claude/` (global via `--global`).
 
 ## Repository Structure
 
@@ -17,4 +17,4 @@ Installed via `npx flutter-llm-toolkit`. The installer (`install.js`) copies or 
 
 ## Development
 
-Changes made here are testable immediately via `node install.js --global --link` (symlinks into `~/.claude/`).
+Changes made here are testable immediately via `./install.js --global` (symlinks into `~/.claude/`).

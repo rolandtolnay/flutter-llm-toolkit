@@ -17,50 +17,65 @@ const args = process.argv.slice(2);
 const has = (long, short) => args.includes(long) || (short && args.includes(short));
 
 const hasGlobal = has('--global', '-g');
-const hasLocal = has('--local', '-l');
-const hasLink = has('--link');
+const hasCopy = has('--copy');
 const hasForce = has('--force', '-f');
 const hasHelp = has('--help', '-h');
 
+// Hidden backward-compat flags (no-ops)
+// --local / -l is the default scope, --link is the default mode
+const _hasLocal = has('--local', '-l');
+const _hasLink = has('--link');
+
 if (hasHelp) {
   console.log(`
-Usage: node install.js --global [--link] | --local [options]
+Usage: ${process.argv[1]} [options]
+
+Installs Flutter/Dart skills, agents, commands, and references for Claude Code
+by creating symlinks from your project (or global ~/.claude/) to this toolkit.
 
 Options:
-  -g, --global   Install to ~/.claude/ (copies by default)
-  -l, --local    Install to ./.claude/ in current directory (always copies)
-      --link     Symlink instead of copy (global only, author convenience)
+  -g, --global   Install to ~/.claude/ (default: current project ./.claude/)
+      --copy     Copy files instead of symlinking
   -f, --force    Overwrite modified files without prompting
   -h, --help     Show this help message
 
 Examples:
-  node install.js --global          # Copy files to ~/.claude/
-  node install.js --global --link   # Symlink into ~/.claude/ (auto-updates with git pull)
-  node install.js --local           # Copy files to ./.claude/ for team sharing
+  # Clone the toolkit once
+  git clone https://github.com/rolandtolnay/flutter-llm-toolkit.git ~/toolkits/flutter-llm-toolkit
+
+  # Install into a Flutter project (creates symlinks in ./.claude/)
+  cd your-flutter-project
+  ~/toolkits/flutter-llm-toolkit/install.js
+
+  # Install globally (creates symlinks in ~/.claude/)
+  ~/toolkits/flutter-llm-toolkit/install.js --global
+
+  # Copy files instead of symlinking (e.g. for team sharing via git)
+  ~/toolkits/flutter-llm-toolkit/install.js --copy
 `);
   process.exit(0);
 }
 
-if (!hasGlobal && !hasLocal) {
-  console.error('Error: specify --global or --local');
-  process.exit(1);
-}
-if (hasGlobal && hasLocal) {
+if (hasGlobal && _hasLocal) {
   console.error('Error: cannot specify both --global and --local');
   process.exit(1);
 }
-if (hasLink && hasLocal) {
-  console.error('Error: --link is only valid with --global');
-  process.exit(1);
-}
-if (hasLink && process.platform === 'win32') {
-  console.error('Error: --link is not supported on Windows (symlinks require admin privileges)');
+if (!hasCopy && process.platform === 'win32') {
+  console.error('Error: symlinks require admin privileges on Windows. Use --copy instead.');
   process.exit(1);
 }
 
 const SCRIPT_DIR = __dirname;
 const MANIFEST_VERSION = '1.0.0';
 const SKIP_PATTERNS = ['.DS_Store', '__pycache__', '.git'];
+
+// Safety check: don't install into the toolkit repo itself
+if (!hasGlobal && fs.realpathSync(process.cwd()) === fs.realpathSync(SCRIPT_DIR)) {
+  console.error('Error: Run this from your project directory, not from the toolkit repo.');
+  console.error('  cd your-flutter-project');
+  console.error(`  ${process.argv[1]}`);
+  process.exit(1);
+}
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -127,7 +142,7 @@ const targetDir = hasGlobal
   ? path.join(os.homedir(), '.claude')
   : path.join(process.cwd(), '.claude');
 
-const mode = hasLink ? 'link' : 'copy';
+const mode = hasCopy ? 'copy' : 'link';
 const manifestDir = path.join(targetDir, 'flutter-llm-toolkit');
 const manifestPath = path.join(manifestDir, '.manifest.json');
 
@@ -441,7 +456,7 @@ function installFiles(newFiles, keep, oldManifest) {
               fs.symlinkSync(linkTarget, linkPath);
               installed.skills++;
             } else {
-              console.error(`  Error: real directory exists at ${linkPath}. Remove it before using --link, or re-run with --force.`);
+              console.error(`  Error: real directory exists at ${linkPath}. Remove it or re-run with --force.`);
               process.exit(1);
             }
           } else {

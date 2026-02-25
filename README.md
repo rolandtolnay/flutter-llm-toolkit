@@ -63,29 +63,38 @@ Guides and patterns that Claude loads as context when working in your project.
 
 Requires Node.js 16.7+ and [Claude Code](https://docs.anthropic.com/en/docs/claude-code).
 
-**Install into a Flutter project** (recommended — scoped to that project):
+**1. Clone the toolkit** (once, anywhere you like):
+
+```bash
+git clone https://github.com/rolandtolnay/flutter-llm-toolkit.git ~/toolkits/flutter-llm-toolkit
+```
+
+**2. Install into your Flutter project:**
 
 ```bash
 cd your-flutter-project
-npx flutter-llm-toolkit --local
+~/toolkits/flutter-llm-toolkit/install.js
 ```
 
-**Install globally** (available in all projects):
+This creates symlinks in `.claude/` pointing back to the toolkit. When you `git pull` in the toolkit repo, all your projects update automatically.
+
+**Install globally** (available across all projects):
 
 ```bash
-npx flutter-llm-toolkit --global
+~/toolkits/flutter-llm-toolkit/install.js --global
 ```
 
 <details>
-<summary>Development setup (auto-updates with git pull)</summary>
+<summary>Copy mode (for checking into project git)</summary>
+
+If you want to commit the toolkit files into your project's repository for team sharing:
 
 ```bash
-git clone https://github.com/rolandtolnay/flutter-llm-toolkit.git
-cd flutter-llm-toolkit
-node install.js --global --link
+cd your-flutter-project
+~/toolkits/flutter-llm-toolkit/install.js --copy
 ```
 
-This symlinks files into `~/.claude/` instead of copying them, so a `git pull` in the repo updates your installation automatically. Not supported on Windows.
+This copies files instead of symlinking. Re-run to update.
 
 </details>
 
