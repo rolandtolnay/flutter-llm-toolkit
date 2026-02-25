@@ -201,8 +201,7 @@ const targetDir = hasGlobal
   : path.join(process.cwd(), '.claude');
 
 const mode = hasCopy ? 'copy' : 'link';
-const manifestDir = path.join(targetDir, 'flutter-llm-toolkit');
-const manifestPath = path.join(manifestDir, '.manifest.json');
+const manifestPath = path.join(targetDir, '.flutter-llm-toolkit.manifest.json');
 
 // ── Phase 2: Read old manifest ──────────────────────────────────────────────
 
@@ -706,7 +705,6 @@ function buildAndWriteManifest(newFiles, keep) {
     files
   };
 
-  fs.mkdirSync(manifestDir, { recursive: true });
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
 }
 
@@ -782,15 +780,7 @@ function uninstall() {
   }
 
   // Remove manifest
-  try {
-    fs.unlinkSync(manifestPath);
-    const entries = fs.readdirSync(manifestDir);
-    if (entries.length === 0) {
-      fs.rmdirSync(manifestDir);
-    }
-  } catch {
-    // ignore
-  }
+  try { fs.unlinkSync(manifestPath); } catch { /* ignore */ }
 
   if (removed > 0) {
     console.log(`  ${green}Removed${reset} ${removed} file(s)`);
