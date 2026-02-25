@@ -66,6 +66,7 @@ if (!hasCopy && process.platform === 'win32') {
 }
 
 const SCRIPT_DIR = __dirname;
+const SCRIPT_DIR_REAL = fs.realpathSync(SCRIPT_DIR);
 const MANIFEST_VERSION = '1.0.0';
 const SKIP_PATTERNS = ['.DS_Store', '__pycache__', '.git'];
 
@@ -93,6 +94,54 @@ function normalizeRelPath(rel) {
 
 function relToFsPath(rel) {
   return normalizeRelPath(rel).split('/').join(path.sep);
+}
+
+function getSkillNameFromRel(rel) {
+  const normalized = normalizeRelPath(rel);
+  if (!normalized.startsWith('skills/')) return null;
+  const parts = normalized.split('/');
+  return parts[1] || null;
+}
+
+function getKeptSkillDirs(keep) {
+  const keptSkillDirs = new Set();
+  for (const rel of keep) {
+    const normalized = normalizeRelPath(rel);
+    const skillName = getSkillNameFromRel(normalized);
+    if (!skillName) continue;
+    if (normalized.split('/').length === 2) {
+      keptSkillDirs.add(skillName);
+    }
+  }
+  return keptSkillDirs;
+}
+
+function isPathWithinOrEqual(basePath, candidatePath) {
+  const relative = path.relative(basePath, candidatePath);
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+}
+
+function resolveSymlinkTargetAbsolute(linkPath) {
+  const linkTarget = fs.readlinkSync(linkPath);
+  return path.resolve(path.dirname(linkPath), linkTarget);
+}
+
+function resolveSymlinkTargetForScopeCheck(linkPath) {
+  const resolved = resolveSymlinkTargetAbsolute(linkPath);
+  try {
+    return fs.realpathSync(resolved);
+  } catch {
+    return resolved;
+  }
+}
+
+function symlinkPointsIntoScriptDir(linkPath) {
+  try {
+    const resolvedTarget = resolveSymlinkTargetForScopeCheck(linkPath);
+    return isPathWithinOrEqual(SCRIPT_DIR_REAL, resolvedTarget);
+  } catch {
+    return false;
+  }
 }
 
 function assertFilePathIsNotDirectory(fullPath) {
@@ -175,8 +224,7 @@ function migrateFromInstallSh() {
       const rel = normalizeRelPath(prefix ? path.posix.join(prefix, entry.name) : entry.name);
 
       if (entry.isSymbolicLink()) {
-        const target = fs.readlinkSync(full);
-        if (target.startsWith(SCRIPT_DIR + path.sep) || target === SCRIPT_DIR) {
+        if (symlinkPointsIntoScriptDir(full)) {
           // This is a symlink into our repo
           if (fs.statSync(full).isDirectory()) {
             // Directory symlink (e.g. skills/linear -> repo/skills/linear/)
@@ -247,7 +295,7 @@ function buildFileList() {
 
 function compareManifests(oldManifest, newFiles) {
   const orphans = [];
-  const conflicts = [];
+  const conflicts = new Set();
 
   const newSet = new Set(newFiles.map(f => f.rel));
   const oldFiles = normalizeManifestFiles(oldManifest && oldManifest.files);
@@ -263,32 +311,65 @@ function compareManifests(oldManifest, newFiles) {
       }
     }
 
-    // Conflicts (copy mode only — symlinks always match source)
+    const hasFileConflict = (f) => {
+      const dest = path.join(targetDir, relToFsPath(f.rel));
+      if (!fs.existsSync(dest) || isSymlink(dest)) return false;
+      assertFilePathIsNotDirectory(dest);
+
+      const oldChecksum = oldFiles[f.rel];
+      if (!oldChecksum) return false;
+
+      // Check if on-disk differs from what we last installed
+      const diskContent = fs.readFileSync(dest, 'utf8');
+      const diskChecksum = computeChecksum(diskContent);
+      if (diskChecksum === oldChecksum) return false;
+
+      // Check if source also differs from on-disk (true conflict)
+      const srcContent = fs.readFileSync(f.abs, 'utf8');
+      const srcChecksum = computeChecksum(srcContent);
+      return srcChecksum !== diskChecksum;
+    };
+
+    // Conflicts in copy mode.
     if (mode === 'copy') {
       for (const f of newFiles) {
-        const dest = path.join(targetDir, relToFsPath(f.rel));
-        if (!fs.existsSync(dest) || isSymlink(dest)) continue;
-        assertFilePathIsNotDirectory(dest);
+        if (hasFileConflict(f)) {
+          conflicts.add(f.rel);
+        }
+      }
+    }
 
-        const oldChecksum = oldFiles[f.rel];
-        if (!oldChecksum) continue;
+    // Conflicts when switching copy -> link:
+    // modified local copies would otherwise be silently replaced by symlinks.
+    if (mode === 'link' && oldManifest.mode === 'copy') {
+      const skillDirsToCheck = new Set();
+      for (const f of newFiles) {
+        const skillName = getSkillNameFromRel(f.rel);
+        if (skillName) {
+          skillDirsToCheck.add(skillName);
+          continue;
+        }
+        if (hasFileConflict(f)) {
+          conflicts.add(f.rel);
+        }
+      }
 
-        // Check if on-disk differs from what we last installed
-        const diskContent = fs.readFileSync(dest, 'utf8');
-        const diskChecksum = computeChecksum(diskContent);
-        if (diskChecksum === oldChecksum) continue;
-
-        // Check if source also differs from on-disk (true conflict)
-        const srcContent = fs.readFileSync(f.abs, 'utf8');
-        const srcChecksum = computeChecksum(srcContent);
-        if (srcChecksum !== diskChecksum) {
-          conflicts.push(f.rel);
+      for (const skillName of skillDirsToCheck) {
+        const skillInstallDir = path.join(targetDir, 'skills', skillName);
+        const skillSourceDir = path.join(SCRIPT_DIR, 'skills', skillName);
+        if (!fs.existsSync(skillInstallDir) || isSymlink(skillInstallDir)) continue;
+        if (!fs.statSync(skillInstallDir).isDirectory()) {
+          conflicts.add(`skills/${skillName}`);
+          continue;
+        }
+        if (hasSkillDirLocalChanges(skillSourceDir, skillInstallDir)) {
+          conflicts.add(`skills/${skillName}`);
         }
       }
     }
   }
 
-  return { orphans, conflicts };
+  return { orphans, conflicts: Array.from(conflicts) };
 }
 
 function isSymlink(p) {
@@ -297,16 +378,27 @@ function isSymlink(p) {
 
 // ── Phase 6: Resolve conflicts ──────────────────────────────────────────────
 
-async function resolveConflicts(conflicts) {
+async function resolveConflicts(conflicts, options = {}) {
+  const { strictNonInteractive = false } = options;
   const overwrite = new Set();
   const keep = new Set();
 
   if (conflicts.length === 0) return { overwrite, keep };
 
-  if (hasForce || !isInteractive()) {
+  if (hasForce) {
     for (const c of conflicts) overwrite.add(c);
-    const reason = hasForce ? 'force' : 'non-interactive';
-    console.log(`  ${yellow}Warning:${reset} overwriting ${conflicts.length} modified file(s) (${reason})`);
+    console.log(`  ${yellow}Warning:${reset} overwriting ${conflicts.length} modified file(s) (force)`);
+    return { overwrite, keep };
+  }
+
+  if (!isInteractive()) {
+    if (strictNonInteractive) {
+      throw new Error(
+        `Local modifications detected in ${conflicts.length} path(s). Re-run interactively to choose overwrite/keep, or re-run with --force to overwrite.`
+      );
+    }
+    for (const c of conflicts) overwrite.add(c);
+    console.log(`  ${yellow}Warning:${reset} overwriting ${conflicts.length} modified file(s) (non-interactive)`);
     return { overwrite, keep };
   }
 
@@ -330,7 +422,9 @@ async function resolveConflicts(conflicts) {
       case 'k': case 'keep': keep.add(file); break;
       case 'a': case 'all': overwriteAll = true; overwrite.add(file); break;
       case 'n': case 'none': keepAll = true; keep.add(file); break;
-      default: overwrite.add(file);
+      default:
+        if (strictNonInteractive) keep.add(file);
+        else overwrite.add(file);
     }
   }
 
@@ -385,26 +479,8 @@ function hasSkillDirLocalChanges(skillSourceDir, skillInstallDir) {
 function installFiles(newFiles, keep, oldManifest) {
   const installed = { agents: 0, commands: 0, skills: 0, references: 0 };
   const skillDirs = mode === 'link' ? getSkillDirs() : new Map();
+  const keptSkillDirs = getKeptSkillDirs(keep);
   const handledSkillDirs = new Set();
-
-  // In copy->link migrations, verify all skill directories are safe to replace
-  // before modifying any files to avoid partial installs on error.
-  if (mode === 'link' && oldManifest && oldManifest.mode === 'copy' && !hasForce) {
-    const changedSkills = [];
-    for (const [skillName, skillSourceDir] of skillDirs) {
-      const skillInstallDir = path.join(targetDir, 'skills', skillName);
-      if (!fs.existsSync(skillInstallDir) || isSymlink(skillInstallDir)) continue;
-      if (!fs.statSync(skillInstallDir).isDirectory()) continue;
-      if (hasSkillDirLocalChanges(skillSourceDir, skillInstallDir)) {
-        changedSkills.push(`skills/${skillName}`);
-      }
-    }
-    if (changedSkills.length > 0) {
-      throw new Error(
-        `Local changes detected in ${changedSkills.join(', ')}. Refusing to replace with symlinks; back up changes or re-run with --force.`
-      );
-    }
-  }
 
   // In copy mode, replace any skill directory symlinks with real directories first.
   // Without this, writing files "into" a skill dir symlink would write into the repo.
@@ -414,8 +490,7 @@ function installFiles(newFiles, keep, oldManifest) {
       for (const entry of fs.readdirSync(skillsInstallDir, { withFileTypes: true })) {
         const full = path.join(skillsInstallDir, entry.name);
         if (entry.isSymbolicLink()) {
-          const target = fs.readlinkSync(full);
-          if (target.startsWith(SCRIPT_DIR)) {
+          if (symlinkPointsIntoScriptDir(full)) {
             fs.unlinkSync(full);
             // Real directory will be created by mkdirSync in the copy loop
           }
@@ -425,15 +500,15 @@ function installFiles(newFiles, keep, oldManifest) {
   }
 
   for (const f of newFiles) {
-    if (keep.has(f.rel)) continue;
+    const rel = normalizeRelPath(f.rel);
+    const skillName = getSkillNameFromRel(rel);
+    if (keep.has(rel) || (skillName && keptSkillDirs.has(skillName))) continue;
 
-    const dest = path.join(targetDir, relToFsPath(f.rel));
+    const dest = path.join(targetDir, relToFsPath(rel));
 
     if (mode === 'link') {
       // For skills, use directory symlinks (one per skill dir)
-      if (f.rel.startsWith('skills/')) {
-        const parts = normalizeRelPath(f.rel).split('/');
-        const skillName = parts[1]; // e.g. "flutter-senior-review"
+      if (rel.startsWith('skills/')) {
         if (!handledSkillDirs.has(skillName) && skillDirs.has(skillName)) {
           handledSkillDirs.add(skillName);
           const linkPath = path.join(targetDir, 'skills', skillName);
@@ -500,17 +575,16 @@ function installFiles(newFiles, keep, oldManifest) {
     }
 
     // Count categories (only reached when something actually changed)
-    if (f.rel.startsWith('agents/')) installed.agents++;
-    else if (f.rel.startsWith('commands/')) installed.commands++;
-    else if (f.rel.startsWith('skills/')) {
+    if (rel.startsWith('agents/')) installed.agents++;
+    else if (rel.startsWith('commands/')) installed.commands++;
+    else if (rel.startsWith('skills/')) {
       // Count per skill directory, not per file
-      const skillName = normalizeRelPath(f.rel).split('/')[1];
       if (!handledSkillDirs.has(skillName)) {
         handledSkillDirs.add(skillName);
         installed.skills++;
       }
     }
-    else if (f.rel.startsWith('references/')) installed.references++;
+    else if (rel.startsWith('references/')) installed.references++;
   }
 
   return installed;
@@ -547,8 +621,9 @@ function removeOrphans(orphans) {
       for (const entry of fs.readdirSync(skillsInstallDir, { withFileTypes: true })) {
         const full = path.join(skillsInstallDir, entry.name);
         if (entry.isSymbolicLink()) {
-          const target = fs.readlinkSync(full);
-          if (target.startsWith(SCRIPT_DIR + path.sep) && !fs.existsSync(target)) {
+          if (!symlinkPointsIntoScriptDir(full)) continue;
+          const resolvedTarget = resolveSymlinkTargetAbsolute(full);
+          if (!fs.existsSync(resolvedTarget)) {
             fs.unlinkSync(full);
             console.log(`  ${yellow}Removed${reset} skills/${entry.name} (stale symlink)`);
           }
@@ -578,35 +653,39 @@ function removeOrphans(orphans) {
 
 function buildAndWriteManifest(newFiles, keep) {
   const files = {};
+  const keptSkillDirs = getKeptSkillDirs(keep);
 
   for (const f of newFiles) {
-    const dest = path.join(targetDir, relToFsPath(f.rel));
-    if (keep.has(f.rel)) {
+    const rel = normalizeRelPath(f.rel);
+    const skillName = getSkillNameFromRel(rel);
+    const isKeptSkill = skillName && keptSkillDirs.has(skillName);
+    const dest = path.join(targetDir, relToFsPath(rel));
+    if (keep.has(rel) || isKeptSkill) {
       // User kept their version — record its current checksum
       try {
         const content = fs.readFileSync(dest, 'utf8');
-        files[f.rel] = computeChecksum(content);
+        files[rel] = computeChecksum(content);
       } catch {
-        files[f.rel] = 'kept';
+        files[rel] = 'kept';
       }
     } else if (mode === 'link') {
       // For symlinks, checksum the source file
       try {
         const content = fs.readFileSync(f.abs, 'utf8');
-        files[f.rel] = computeChecksum(content);
+        files[rel] = computeChecksum(content);
       } catch {
         // Binary file — checksum from buffer
         const buf = fs.readFileSync(f.abs);
-        files[f.rel] = computeChecksum(buf);
+        files[rel] = computeChecksum(buf);
       }
     } else {
       // Checksum the installed copy
       try {
         const content = fs.readFileSync(dest, 'utf8');
-        files[f.rel] = computeChecksum(content);
+        files[rel] = computeChecksum(content);
       } catch {
         const buf = fs.readFileSync(dest);
-        files[f.rel] = computeChecksum(buf);
+        files[rel] = computeChecksum(buf);
       }
     }
   }
@@ -646,7 +725,8 @@ async function main() {
   const { orphans, conflicts } = compareManifests(oldManifest, newFiles);
 
   // Phase 6: Resolve conflicts
-  const { overwrite, keep } = await resolveConflicts(conflicts);
+  const strictConflictHandling = mode === 'link' && oldManifest && oldManifest.mode === 'copy';
+  const { overwrite, keep } = await resolveConflicts(conflicts, { strictNonInteractive: strictConflictHandling });
 
   // Phase 7: Install files
   const counts = installFiles(newFiles, keep, oldManifest);

@@ -2,6 +2,9 @@
   "name": "flutter-llm-toolkit",
   "version": "1.0.0",
   "description": "Flutter/Dart agents, skills, patterns, and references for Claude Code",
+  "scripts": {
+    "test:install-regressions": "scripts/test-install-regressions.sh"
+  },
   "bin": {
     "flutter-llm-toolkit": "install.js"
   },
