@@ -201,11 +201,20 @@ const targetDir = hasGlobal
   : path.join(process.cwd(), '.claude');
 
 const mode = hasCopy ? 'copy' : 'link';
-const manifestPath = path.join(targetDir, '.flutter-llm-toolkit.manifest.json');
+const manifestDir = path.join(targetDir, 'flutter-llm-toolkit');
+const manifestPath = path.join(manifestDir, '.manifest.json');
 
 // ── Phase 2: Read old manifest ──────────────────────────────────────────────
 
 function readManifest() {
+  // One-time migration: move legacy flat-file manifest into subdirectory
+  const legacyPath = path.join(targetDir, '.flutter-llm-toolkit.manifest.json');
+  if (!fs.existsSync(manifestPath) && fs.existsSync(legacyPath)) {
+    fs.mkdirSync(manifestDir, { recursive: true });
+    fs.renameSync(legacyPath, manifestPath);
+    console.log(`  Migrated manifest to flutter-llm-toolkit/.manifest.json`);
+  }
+
   try {
     if (!fs.existsSync(manifestPath)) return null;
     return JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
@@ -705,6 +714,7 @@ function buildAndWriteManifest(newFiles, keep) {
     files
   };
 
+  fs.mkdirSync(manifestDir, { recursive: true });
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
 }
 
@@ -779,8 +789,11 @@ function uninstall() {
     }
   }
 
-  // Remove manifest
+  // Remove manifest file, then try removing manifest directory if empty
   try { fs.unlinkSync(manifestPath); } catch { /* ignore */ }
+  try {
+    if (fs.readdirSync(manifestDir).length === 0) fs.rmdirSync(manifestDir);
+  } catch { /* ignore */ }
 
   if (removed > 0) {
     console.log(`  ${green}Removed${reset} ${removed} file(s)`);
