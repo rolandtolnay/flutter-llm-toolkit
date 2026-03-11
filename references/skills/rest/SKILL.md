@@ -27,8 +27,6 @@ Provides production-ready REST API infrastructure patterns for Flutter apps usin
 </success_criteria>
 
 <overview>
-A complete REST API infrastructure module for Flutter apps using Dio for HTTP, Riverpod for dependency injection, and json_serializable for type-safe serialization.
-
 <domains>
 - **API Infrastructure**: Dio configuration, auth interceptors, API class organization, response parsing
 - **DTO/Entity**: json_serializable patterns, nullable handling, enums, nested objects, pagination
@@ -211,7 +209,6 @@ class ProductScreen extends ConsumerWidget {
 </example>
 
 <references>
-<reference file="references/patterns.md">Complete pattern implementations with code and rationale</reference>
 <reference file="references/api-infrastructure.md">HTTP client configuration, interceptors, API class patterns, response parsing</reference>
 <reference file="references/dto-entity.md">JSON serialization patterns, nullable handling, enums, nested objects</reference>
 <reference file="references/error-handling.md">Exception hierarchy, error classification, provider observers, UI display</reference>
