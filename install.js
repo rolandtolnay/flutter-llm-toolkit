@@ -542,13 +542,14 @@ function installFiles(newFiles, keep, oldManifest) {
               installed.skills++;
             }
           } else if (fs.existsSync(linkPath) && fs.statSync(linkPath).isDirectory()) {
-            // Real directory exists — OK if copy→link switch or --force
-            if ((oldManifest && oldManifest.mode === 'copy') || hasForce) {
+            // Real directory exists where a symlink should be.
+            // Replace if: switching from copy mode, content matches source, or --force.
+            if ((oldManifest && oldManifest.mode === 'copy') || hasForce || !hasSkillDirLocalChanges(linkTarget, linkPath)) {
               fs.rmSync(linkPath, { recursive: true });
               fs.symlinkSync(linkTarget, linkPath);
               installed.skills++;
             } else {
-              console.error(`  Error: real directory exists at ${linkPath}. Remove it or re-run with --force.`);
+              console.error(`  Error: ${linkPath} has local modifications. Re-run with --force to overwrite.`);
               process.exit(1);
             }
           } else {
