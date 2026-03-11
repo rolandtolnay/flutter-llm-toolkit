@@ -1,6 +1,6 @@
 ---
 description: Extract UI patterns from current Flutter project into a reusable implement-ui skill
-allowed-tools: Task(Explore), AskUserQuestion, Glob, Grep, Read, Write, Bash, Skill(taches-cc-resources:create-agent-skills)
+allowed-tools: Task(Explore), AskUserQuestion, Glob, Grep, Read, Write, Bash, Skill(create-skill)
 ---
 
 <objective>
@@ -468,10 +468,9 @@ For sparse projects (fewer findings), consolidate into fewer files or all-in-one
 
 <generate_skill_md>
 <critical>
-Before generating SKILL.md, attempt to invoke the `taches-cc-resources:create-agent-skills` skill using the Skill tool.
-Pass the extracted patterns and analysis as context.
+Before generating SKILL.md, invoke `Skill('create-skill')` with the extracted patterns and analysis as context.
 
-If the skill tool is unavailable or errors, proceed with the structure below (do not block generation).
+If the skill is unavailable or errors, proceed with the structure below (do not block generation).
 </critical>
 
 Generate SKILL.md following this structure:
@@ -738,7 +737,7 @@ or reference specific patterns by reading the reference files directly.
 </command_workflow>
 
 <fallback_behavior>
-If `taches-cc-resources:create-agent-skills` skill is unavailable:
+If `create-skill` skill is unavailable:
 - Proceed with the SKILL.md structure defined in Phase 4
 - Use XML tags for structure (<objective>, <patterns>, etc.)
 - Follow the pattern of existing implement-ui skills in the codebase
