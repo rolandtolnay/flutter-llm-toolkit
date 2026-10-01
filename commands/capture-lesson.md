@@ -1,15 +1,18 @@
 ---
-description: Capture lessons from code refactorings into reusable docs for future LLM code writers. Use after completing a refactoring.
-argument-hint: [refactoring-description] [commit_sha]
+description: Capture lessons from implementation work into reusable docs for future LLM code writers. Use after a refactoring, or mid-conversation to capture insights from the current session.
+argument-hint: [topic-hint] [commit_sha] (empty = derive from conversation)
 allowed-tools: [AskUserQuestion, Bash, Read, Grep, Glob, Write]
 ---
 
 <objective>
-Analyze code changes from a refactoring and distill lessons into a standalone reference file. The command (an LLM) derives lessons from the diff — the code changes were produced by an LLM, so diff analysis IS the primary source of insight.
+Distill lessons from implementation work into a standalone reference file. The command (an LLM) derives lessons from one of two sources:
 
-Output: a `.md` file in `docs/lessons/` optimized for LLM consumption with enough clarity for human review.
+1. **Diff analysis** — when arguments or git state point to specific code changes
+2. **Conversation context** — when invoked mid-conversation after implementation work, the conversation itself (decisions made, problems hit, patterns discovered, approaches debated) is the primary source
 
-A lesson sits between one-liner code quality rules and comprehensive playbooks. It captures the "why" and "watch out for" from a specific refactoring — typically 2-4 insights with code examples.
+Output: a `.md` file in `etc/lessons/` optimized for LLM consumption with enough clarity for human review.
+
+A lesson sits between one-liner code quality rules and comprehensive playbooks. It captures the "why" and "watch out for" from a specific piece of work — typically 2-4 insights with code examples.
 </objective>
 
 <context>
@@ -21,10 +24,9 @@ Git state:
 </context>
 
 <developer_role>
-The developer spotted a problem and gave direction — they did NOT author line changes.
+**Diff mode:** The developer spotted a problem and gave direction — they did NOT author line changes. Ask about: what looked wrong (the trigger), high-level direction, whether the result is satisfactory. Do NOT ask about: why specific code patterns were chosen, trade-offs between approaches — derive these from the diff.
 
-Ask about: what looked wrong (the trigger), high-level direction, whether the result is satisfactory.
-Do NOT ask about: why specific code patterns were chosen, trade-offs between approaches — derive these from the diff.
+**Conversation mode:** The developer has been an active participant — their messages describing problems, evaluating approaches, and reacting to results ARE primary evidence. Mine the conversation for: what surprised them, what they corrected, what they explicitly called out as important. Do NOT re-ask questions the conversation already answers.
 </developer_role>
 
 <output_format_spec>
@@ -82,74 +84,103 @@ Write the lesson file directly — user reviews in their editor or via `git diff
 
 ### 1.1 Assess Available Context
 
-Check three sources for refactoring context:
+Check three sources for refactoring context, in priority order:
 1. **$ARGUMENTS** — explicit description and optional commit SHA
-2. **Conversation history** — prior messages may describe the refactoring, its motivation, and the user's vision
+2. **Conversation history** — prior messages describing implementation work, decisions, problems, and outcomes
 3. **Git state** — uncommitted changes or recent commits
 
 Parse $ARGUMENTS for a commit SHA (7+ hex chars; verify with `git rev-parse --verify <sha>^{commit}`, treat as description text if verification fails).
 
-If $ARGUMENTS and conversation history already describe what was refactored, skip to Step 1.2.
+### 1.2 Determine Analysis Mode
 
-If the scope is unclear, use AskUserQuestion — phrase it around what the developer actually knows:
+**Choose the mode based on what's available:**
+
+**→ Diff mode** (use when ANY of these are true):
+- $ARGUMENTS contains a commit SHA
+- $ARGUMENTS explicitly describes a refactoring to find in git
+- There are uncommitted changes or recent commits with no conversation context
+
+**→ Conversation mode** (use when ALL of these are true):
+- $ARGUMENTS is empty or contains only a topic hint
+- The conversation contains substantive implementation work — code was written, problems were debugged, decisions were made, or approaches were evaluated
+- The conversation provides enough context to derive lessons without a diff
+
+When ambiguous, prefer conversation mode if the conversation is rich, diff mode if it's thin. If genuinely unclear, use AskUserQuestion:
 ```
-Question: "What did you notice was wrong with the code before this refactoring?"
-Header: "Trigger"
-Options: [2-4 concrete interpretations based on $ARGUMENTS and conversation context]
-```
-
-### 1.2 Determine Change Source
-
-If there's an obvious target (commit SHA in arguments, or uncommitted changes present, or conversation indicates the source), use it directly.
-
-Otherwise, use AskUserQuestion:
-```
-Question: "What code changes should I analyze?"
-Header: "Changes"
+Question: "What should I capture lessons from?"
+Header: "Source"
 Options:
+- "This conversation" — What we just worked on together
 - "Uncommitted changes" — Current work in progress (git diff)
 - "Specific commits" — A commit or range (I'll provide refs)
 - "All changes on branch" — Everything since branching from main
 ```
 
-Gather changes based on source:
+### 1.3 Gather Source Material
+
+**Diff mode — gather changes:**
 - Uncommitted: `git diff --cached` and `git diff`
 - Specific commits: `git show <commit>` or `git diff <from>..<to>`
 - Branch changes: `git diff main...HEAD`
+- For large diffs (20+ files), focus on files most relevant to the refactoring description. Skip auto-generated files, lock files, and config churn.
 
-For large diffs (20+ files), focus on files most relevant to the refactoring description. Skip auto-generated files, lock files, and config churn.
+**Conversation mode:** The conversation history is the source material. If the conversation references specific files, read them for concrete code examples to include in the lesson. Proceed to Step 2 for structured analysis.
 
-## 2. Analyze Changes
+## 2. Analyze Source Material
 
-### 2.1 Read the Diff
+### 2.1 Diff mode
 
-Study the full diff. Identify:
+**Read the Diff.** Study the full diff. Identify:
 - What patterns were replaced and with what
 - Structural changes (file moves, class splits, inheritance changes)
 - New abstractions introduced or old ones removed
 - Error handling, state management, or API changes
 
-### 2.2 Read Changed Files for Full Context
-
-The diff shows deltas but not surrounding code. Read the current state of the 3-5 most significant changed files — prioritize:
+**Read Changed Files for Full Context.** The diff shows deltas but not surrounding code. Read the current state of the 3-5 most significant changed files — prioritize:
 - Files demonstrating the new pattern most clearly
 - Files with the largest logical changes
 - Files that had the most issues in the old approach
 
 Use Grep/Glob to find related files if the diff references patterns, base classes, or utilities not in the changeset.
 
+### 2.2 Conversation mode
+
+**Reconstruct the narrative.** Scan the conversation chronologically and identify:
+- The starting problem or goal
+- Problems encountered and how they were solved
+- Incorrect approaches that were tried and abandoned (and why)
+- Decisions between alternatives (what was chosen and what was rejected)
+- The turning point — what unlocked the solution
+- The final approach and why it won
+
+**Extract concrete evidence.** For each potential insight, find supporting material:
+- Code snippets from the conversation (before/after if available)
+- If the conversation references files that were modified, read those files for current-state code examples
+- Developer statements that validate the insight ("that's the key thing", corrections, emphatic reactions)
+- Explicit signal phrases: "the key insight is...", "the problem was...", "don't do X because..."
+
+**Verify with codebase.** If lessons reference patterns or files, use Grep/Glob/Read to confirm the code matches what was discussed. Pull concrete code examples from the actual files — don't rely solely on conversation snippets which may be outdated or partial.
+
 ## 3. Derive Lessons
 
-This is the core step. The command (an LLM) analyzes the before→after transformation to derive:
+This is the core step. Regardless of mode, derive:
 
-- **Insights**: What was the core improvement? What's non-obvious about the new approach? What would an LLM writing fresh code get wrong without this knowledge?
+- **Insights**: What was the core improvement or discovery? What's non-obvious? What would an LLM get wrong without this knowledge?
 - **Rules**: Terse distillation for quick LLM reference
 - **Anti-patterns**: What does the "bad" version look like? What pitfalls would an LLM fall into?
 - **Trigger condition**: When should a future LLM apply these lessons?
 
-Assign a **domain tag** matching the primary area of the refactoring.
+**Diff mode:** Analyze the before→after transformation. The diff is the primary evidence.
 
-Derive the filename slug from the refactoring description — $ARGUMENTS, conversation context, or the dominant theme in the diff (lowercase, hyphens, max 4-5 words).
+**Conversation mode:** Synthesize across the full conversation arc. Prioritize:
+1. Insights the developer explicitly called out or reacted strongly to
+2. Dead ends that wasted time — the "don't do this" is often the most valuable lesson
+3. Non-obvious connections discovered during the work (e.g., "the real problem was X, not Y")
+4. Patterns that emerged as the right approach after trying alternatives
+
+Assign a **domain tag** matching the primary area of the work.
+
+Derive the filename slug from $ARGUMENTS, conversation context, or the dominant theme (lowercase, hyphens, max 4-5 words).
 
 ## 4. Validate with Developer
 
@@ -166,12 +197,12 @@ Options:
 
 ## 5. Write Lesson File
 
-Create `docs/lessons/` directory if it doesn't exist:
+Create `etc/lessons/` directory if it doesn't exist:
 ```bash
 mkdir -p docs/lessons
 ```
 
-Write directly to `docs/lessons/{slug}.md`.
+Write directly to `etc/lessons/{slug}.md`.
 
 Report: file path, line count, number of insights, domain tag.
 
@@ -192,10 +223,11 @@ Apply targeted edits if changes needed.
 </process>
 
 <success_criteria>
-- Lessons derived from diff analysis by the command, not dictated by the developer
-- Developer validates direction (trigger, completeness) — not asked to explain code-level decisions
+- Lessons derived by the command (from diff or conversation), not dictated by the developer
+- Developer validates direction (trigger, completeness) — not asked to explain what the command can derive
 - "Applies when" trigger present and specific enough for future injection
-- Insights are 1-2 sentences with `inline code` + before/after code blocks
+- Insights are 1-2 sentences with `inline code` + before/after code blocks (code examples from diff or from files referenced in conversation)
 - Rules section has terse one-liners mechanically extractable for skill synthesis
 - Anti-patterns section merges pitfalls and bad patterns with concrete code
+- Conversation mode: dead ends and corrections captured as anti-patterns, not just the final approach
 </success_criteria>

@@ -336,8 +336,8 @@ Use Glob to list all files in `.claude/extraction/backends/{module-name}/` and p
 Next steps:
 1. Review the generated files in .claude/extraction/backends/
 2. Check for any remaining project-specific values
-3. When satisfied, copy to flutter-launchpad/content/backends/{module-name}/
-4. Merge manifest-entry.json into content/manifest.json
+3. When satisfied, copy SKILL.md and references/ to flutter-llm-toolkit/references/skills/{module-name}/
+4. Use the toolkit README install prompt to add the new module to the selected projects
 ```
 </final_report>
 

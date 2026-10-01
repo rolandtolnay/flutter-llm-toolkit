@@ -4,17 +4,17 @@ Flutter/Dart agents, skills, patterns, and references for Claude Code.
 
 ## Distribution
 
-Installed by cloning the repo and running `install.js`. The installer symlinks (default) or copies (`--copy`) files into `.claude/` (project, default) or `~/.claude/` (global via `--global`).
+Installation is LLM-led using the copy-paste prompt in `README.md`; there is no installer script. The installing agent confirms resources, target harness, project/user scope, and copy/symlink mode, then adapts paths and verifies discovery without modifying the shared source checkout.
 
 ## Repository Structure
 
-| Directory | Installs to | Contents |
-|-----------|-------------|----------|
-| `agents/` | `~/.claude/agents/` | Flutter-specific subagent definitions |
-| `commands/` | `~/.claude/commands/` | Slash commands for Flutter workflows |
-| `skills/` | `~/.claude/skills/` | Claude Code skills (SKILL.md + supporting files) |
-| `references/` | `~/.claude/references/` | Code quality guides, patterns, widget conventions |
+| Directory | Contents |
+|-----------|----------|
+| `agents/` | Flutter-specific subagent definitions |
+| `commands/` | Slash commands for Flutter workflows |
+| `skills/` | Claude Code skills (SKILL.md + supporting files) |
+| `references/` | Code quality guides, patterns, widget conventions, and bundled REST skill |
 
 ## Development
 
-Changes made here are testable immediately via `./install.js --global` (symlinks into `~/.claude/`).
+Validate selected resources using the README install prompt in the target harness. Symlinked resources follow source changes; copied or adapted resources need a guided update. Verify final reference paths and discovery names, preserving existing installations and local edits.

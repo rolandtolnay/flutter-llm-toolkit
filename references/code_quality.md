@@ -26,16 +26,19 @@ Read files, check against rules below. Output concise but comprehensive—sacrif
 - Loading flags from provider state: `final isLoading = actionProvider.isLoading` not `useState<bool>(false)`
 - On-demand action providers: `FutureOr<T?> build() => null;`
 - Action outcomes via `ref.listen` + `whenOrNull`: `next.whenOrNull(data: (result) => ..., error: (e, _) => showError(e))`
+- Action result payloads: guard known errors first, then null-guard the success value: `if (value == null) { showError(); return; }` not optional `if (value != null) { onSuccess(value); }` with detached fallback below
 - Parallel async fetch: `final (a, b, c) = await (ref.watch(aProvider.future), ...).wait;`
 - Provider actions return `void`, never rethrow; use `AsyncValue.guard()`
 - Prefer `.value` over `.asData?.value`: `asyncValue.value ?? []`
 - Error handling: `ref.listenOnError(provider)` at screen level; let errors propagate
+- Unconditional state setters: always set state regardless of value, skip equality checks in setters
 
 ## Sealed Classes
 
 - Replace boolean flags with sealed variants: `sealed class State {}` with `Loading`, `Ready`, `Error`
 - Switch expressions for exhaustive handling: `return switch (state) { Loading() => ..., Ready(:final data) => ... };`
 - Shared params in base constructor: `sealed class Mode { const Mode({required this.id}); final String id; }`
+- Co-locate data with sealed variants: `class Ready { final Controller controller; }` not separate state fields
 
 ## Domain & Business Logic
 
@@ -55,6 +58,8 @@ Read files, check against rules below. Output concise but comprehensive—sacrif
 - `.divide()` for spacing: `items.map((e) => Widget()).divide(const SizedBox(width: 8))`
 - `firstWhereOrNull` with fallback: `items.firstWhereOrNull((x) => x.isSelected) ?? items.first`
 - Map over `EnumType.values`: `SortOrder.values.map((e) => ChoiceChip(label: Text(e.label)))`
+- Prefer `.map()` with spread for list conversions: `[...items.map((e) => e.toWidget())]`
+- Guard against empty collections at method entry points before processing
 
 ## Forms & Input
 
@@ -65,6 +70,8 @@ Read files, check against rules below. Output concise but comprehensive—sacrif
 - Semantic spacing: `Spacing.section` between major sections
 - Framework widgets over generic: `CustomSlider` not `Slider`
 - Clean placeholders: `'Acme Corp'` not `'e.g. Acme Corp'`
+- Consistent typography scales for form labels: `context.typography.heading` for section titles
+- Extract complex validation into named methods: `bool hasValidInput()`
 
 ## Hooks
 
@@ -73,6 +80,8 @@ Read files, check against rules below. Output concise but comprehensive—sacrif
 - `useIsMounted()` guard for async state updates
 - Disposable resources in `useRef`: `final controllerRef = useRef<Controller?>(null);`
 - `useAnimationController` for press/tap animations: replaces `StatefulWidget` + manual `AnimationController` lifecycle
+- Sync input controllers with state via useEffect listeners
+- Encapsulate async resource lifecycle in custom hooks: `useVideoPlayerController()` handles init, config, and disposal
 
 ## Model & Data
 
@@ -83,6 +92,8 @@ Read files, check against rules below. Output concise but comprehensive—sacrif
 - Nullable Function in copyWith: `Address? Function()? address`
 - Suffix data classes: `UserProfileData`
 - Value equality via `Equatable`: `extends Equatable` + `List<Object?> get props => [id]` not manual `operator ==`/`hashCode`
+- Encapsulate conversion logic in factory constructors: avoid manual property mapping across call sites
+- Eliminate stored derived properties from data models: compute from other state instead
 
 ## Widget API
 
@@ -120,6 +131,7 @@ Read files, check against rules below. Output concise but comprehensive—sacrif
 - No barrel files that only re-export
 - Scoped provider names: `collectionExpansionVisibilityProvider` not generic `expansionVisibilityProvider`
 - Extract widgets >100 lines to separate files
+- Promote reusable private widgets to public in dedicated files: `_DetailWidget` → `detail_widget.dart`
 
 ## Localization
 

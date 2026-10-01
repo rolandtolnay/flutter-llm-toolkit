@@ -7,7 +7,7 @@ allowed-tools: Bash, Read, Grep, Glob, Write, Edit
 <objective>
 Extract Flutter/Dart coding principles from code changes and append them to the local code quality guidelines file at `.claude/references/code_quality.md`.
 
-The file is symlinked to the toolkit repo — writes propagate to all projects automatically.
+If the file is symlinked to the toolkit repo, writes propagate to all linked projects. A project-local copy changes only that project's guidelines.
 </objective>
 
 <context>
@@ -23,7 +23,7 @@ $( git diff --stat 2>/dev/null | tail -5 )
 <embedded_knowledge>
 <guidelines_file>
 - Path: `.claude/references/code_quality.md`
-- This file is symlinked to the toolkit repo via `install.js`
+- Installation may use a shared symlink or a project-local copy; check the actual target before writing
 - Read with the Read tool, write with the Write tool
 </guidelines_file>
 
@@ -90,7 +90,7 @@ Follow LLM-optimized documentation format:
 
 2. Verify the guidelines file exists:
    Use Read to check `.claude/references/code_quality.md` exists.
-   If not found, stop with: "Guidelines file not found at `.claude/references/code_quality.md`. Run `install.js` from the flutter-llm-toolkit first."
+   If not found, stop with: "Guidelines file not found at `.claude/references/code_quality.md`. Use the flutter-llm-toolkit README install prompt to install the code quality reference and adapt this command's path to your setup."
 </step>
 
 <step name="parse_arguments">

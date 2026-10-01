@@ -1,0 +1,43 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+linter:
+  rules:
+    prefer_const_constructors: false
+    prefer_const_literals_to_create_immutables: false
+    prefer_const_constructors_in_immutables: false
+
+    public_member_api_docs: false
+    always_use_package_imports: false
+    sort_constructors_first: false
+    unnecessary_lambdas: false
+    lines_longer_than_80_chars: false
+    always_put_required_named_parameters_first: false
+    prefer_if_elements_to_conditional_expressions: false
+    cascade_invocations: false
+    avoid_catches_without_on_clauses: false
+    require_trailing_commas: false # disabled because of new dart formatting
+    avoid_positional_boolean_parameters: false
+    document_ignores: false
+    specify_nonobvious_property_types: false
+    discarded_futures: false
+    unreachable_from_main: false
+
+formatter:
+  trailing_commas: automate
+
+analyzer:
+  errors:
+    # Preserve the existing opt-out without configuring the retired lint rule.
+    one_member_abstracts: ignore
+  exclude:  
+    - 'lib/**.g.dart'
+    - 'lib/generated/**'
+    - build/**
+    - android/**
+    - ios/**
+
+plugins:
+  riverpod_lint:
+    version: 3.1.9
+    diagnostics:
+      only_use_keep_alive_inside_keep_alive: false

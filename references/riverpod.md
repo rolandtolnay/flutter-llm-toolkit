@@ -24,7 +24,7 @@ class Auth extends _$Auth {
   @override
   Future<AuthState> build() async {
     final authState = await _api.getAuthState();
-    log.info('Auth state changed: $result');
+    log.info('Auth state changed: $authState');
 
     return authState;
   }
@@ -32,12 +32,13 @@ class Auth extends _$Auth {
   Future<void> signOut() async {
     state = const AsyncValue.loading();
 
-    try {
-      await _api.signOut();
-    } catch (e, st) {
-      log.error('Error signing out: $e', e, st);
-      ref.invalidateSelf();
-    }
+    final api = _api;
+    final result = await AsyncValue.guard(() async {
+      await api.signOut();
+      return api.getAuthState();
+    });
+    if (!ref.mounted) return;
+    state = result;
   }
 }
 ```
