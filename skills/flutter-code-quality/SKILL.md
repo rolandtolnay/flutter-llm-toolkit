@@ -1,142 +1,28 @@
 ---
 name: flutter-code-quality
-description: Organize Flutter/Dart code to follow project conventions. Use after implementation to restructure folders, fix widget file organization, align naming patterns, or clean up code to match project standards.
-license: MIT
-metadata:
-  author: Roland Tolnay
-  version: "1.0.0"
-  date: January 2026
-  argument-hint: <file-or-pattern>
+description: Check changed Flutter/Dart files against the opinionated code quality checklist and fix the findings. Use after implementing or changing Flutter code, or when asked to review files for quality.
 ---
 
 # Flutter Code Quality
 
-Comprehensive guidelines for Flutter/Dart code quality, widget organization, and folder structure. Combines pattern-level rules (anti-patterns, idioms) with structural guidance (build method organization, folder conventions).
+An expensive linter: `references/checklist.md` holds rules a static analyzer cannot express (state placement, sealed types, provider shapes, collection idioms, widget extraction). A subagent reads the changed files against the checklist and returns terse `file:line` findings. You, the implementing agent, decide which to apply and make the edits, because you know why the code looks the way it does.
 
-## How It Works
+## Scope
 
-1. Read code quality guidelines from the local reference file
-2. Apply embedded widget organization and folder structure rules
-3. Check files against all guidelines
-4. Output findings in terse `file:line` format
+The files changed by the current task: `git diff --name-only` plus untracked `.dart` files, or the files the user names. Skip generated files (`*.g.dart`, `*.gr.dart`, `*.freezed.dart`, `lib/generated/`) and tests.
 
-## Code Quality Guidelines
+## Running the check
 
-Read guidelines before each review:
+Delegate to the `flutter-code-quality-reviewer` subagent with the file list. In Claude Code that is the Agent tool with that subagent type; in Pi it is `subagent_run` with that agent name. When no such subagent is installed, read `references/checklist.md` yourself and review the files against it.
 
-```
-Read .claude/references/code_quality.md
-```
+The subagent returns findings grouped by file, each as `path:line - issue → fix`, and `✓ pass` for clean files. It does not edit anything.
 
-Contains: anti-patterns, widget patterns, state management, collections, hooks, theme/styling, etc.
+## Acting on findings
 
-## Widget Organization Guidelines (Embedded)
+- Apply a finding unless it conflicts with a project rule in `AGENTS.md`, would change behaviour, or the checklist rule does not fit the situation (for example a `StatefulWidget` the hooks cannot replace). Say which findings you skipped and why, in one line each.
+- After edits, rerun code generation if providers or models changed and run `dart analyze`. A second check is only needed when the fixes were large.
+- A clean report ends the check; do not look for more.
 
-### Build Method Structure
+## Standalone use
 
-Order inside `build()`:
-1. Providers (reads/watches)
-2. Hooks (if using flutter_hooks)
-3. Derived variables needed for rendering
-4. Widget variables (in render order)
-
-### When to Use What
-
-| Scenario | Pattern |
-|----------|---------|
-| Widget always shown, no conditions | Local variable: `final header = Container(...);` |
-| Widget depends on condition/null check | Builder function: `Widget? _buildContent() { if (data == null) return null; ... }` |
-| Subtree is large, reusable, or has own state | Extract to standalone widget in own file |
-| Function needs 3 or fewer params | Define outside `build()` as class method |
-| Function needs 4+ params (esp. hooks) | Define inside `build()` to capture scope |
-
-### Rules
-
-- **No file-private widgets** - If big enough to be a widget, it gets its own file
-- **Define local variables in render order** - Top-to-bottom matches screen layout
-- **Extract non-trivial conditions** - `final canSubmit = isValid && !isLoading && selectedId != null;`
-- **Pass `WidgetRef` only** when function needs both ref and context - Use `ref.context` inside
-
-### Async UX Conventions
-
-- **Button loading** - Watch provider state, not separate `useState<bool>`
-- **Retriable errors** - Listen to provider, show toast on error, user retries by tapping again
-- **First-load errors** - Render error view with retry button that invalidates provider
-
-### Sorting/Filtering
-
-- Simple options: Use enum with computed properties
-- Options with behavior: Use sealed class
-- Complex multi-field filtering: Dedicated `Filter` class
-
-## Folder Structure Guidelines (Embedded)
-
-### Core Rules
-
-1. **Organize by feature** - Each feature gets its own folder
-2. **Screens at feature root** - `account_screen.dart`, `edit_account_screen.dart`
-3. **Create subfolders only when justified:**
-   - `widgets/` when 2+ reusable widgets exist
-   - `providers/` when 2+ provider files exist
-   - `domain/` usually always (models, repositories)
-4. **Split large features into subfeatures** - Each subfeature follows same rules
-
-### Example
-
-```
-lib/features/
-  account/
-    account_screen.dart
-    edit_account_screen.dart
-    widgets/
-      account_avatar.dart
-      account_form.dart
-    providers/
-      account_provider.dart
-    domain/
-      account.dart
-      account_repository.dart
-```
-
-## Application Priority
-
-When reviewing code, apply in this order:
-
-1. **Code Quality Patterns** (from `.claude/references/code_quality.md`) - Anti-patterns, idioms, provider patterns
-2. **Widget Organization** (above) - Build structure, extraction rules, async UX
-3. **Folder Structure** (above) - File placement, feature boundaries
-
-## Anti-Patterns Quick Reference
-
-Flag these patterns (details in `.claude/references/code_quality.md`):
-
-- `useState<bool>` for loading states
-- Manual try-catch in provider actions
-- `.toList()..sort()` instead of `.sorted()`
-- `_handleAction(ref, controller, user, state)` with 4+ params
-- Hardcoded hex colors
-- Deep `lib/features/x/presentation/` directories
-- Barrel files that only re-export
-- Boolean flags instead of sealed classes
-- Magic numbers scattered across widgets
-- `where((e) => e.status == Status.active)` instead of computed property
-- Generic provider names like `expansionVisibilityProvider`
-- `.asData?.value` instead of `.value`
-
-## Output Format
-
-Group by file. Use `file:line` format. Terse findings.
-
-```text
-## lib/home/home_screen.dart
-
-lib/home/home_screen.dart:42 - useState for loading state -> use provider
-lib/home/home_screen.dart:67 - .toList()..sort() -> .sorted()
-lib/home/home_screen.dart:89 - hardcoded Color(0xFF...) -> context.color.*
-
-## lib/models/user.dart
-
-pass
-```
-
-State issue + location. Skip explanation unless fix non-obvious. No preamble.
+When asked to check specific files or a folder outside an implementation task, run the same subagent and present the findings without fixing, unless the user asked for fixes.
