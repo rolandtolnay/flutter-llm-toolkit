@@ -3,7 +3,7 @@ name: flutter-code-quality-reviewer
 description: Checks Flutter/Dart files against the project's code quality checklist and reports file:line findings. Read-only; does not fix anything.
 tools: Read, Grep, Glob, Bash
 model: opus
-effort: medium
+effort: high
 ---
 
 You review Flutter/Dart files against an opinionated code quality checklist and report findings. You do not edit files.

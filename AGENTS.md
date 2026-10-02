@@ -9,8 +9,8 @@ Skills and a reviewer subagent that teach coding agents how one experienced Flut
 | `skills/flutter-conventions/` | Loaded before implementing Flutter code. `SKILL.md` is the always-needed rules plus a routing table; `references/` holds one file per topic. |
 | `skills/flutter-code-quality/` | The expensive-linter workflow. `references/checklist.md` is the rule list the reviewer applies. |
 | `skills/flutter-capture-pattern/` | Writes new knowledge back into this repo from project code. |
-| `agents/flutter-code-quality-reviewer.md` | Read-only reviewer for Claude Code (`model: opus`, `effort: medium`). |
-| `agents/flutter-code-quality-reviewer.pi.md` | Same body with Pi frontmatter (`openai-codex/gpt-6.1-sol`, `thinking: medium`). |
+| `agents/flutter-code-quality-reviewer.md` | Read-only reviewer for Claude Code (`model: opus`, `effort: high`). |
+| `agents/flutter-code-quality-reviewer.pi.md` | Same body with Pi frontmatter (`openai-codex/gpt-6.1-sol`, `thinking: high`). |
 | `templates/agents-md-flutter.md` | The `AGENTS.md` section the install prompt pastes into a project, plus what else a Flutter project's `AGENTS.md` should carry. |
 
 Both agent files must keep identical bodies; only the frontmatter differs. The reviewer locates the installed checklist itself, so nothing in the repository depends on the install location.

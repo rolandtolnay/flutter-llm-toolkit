@@ -3,7 +3,7 @@ name: flutter-code-quality-reviewer
 description: Checks Flutter/Dart files against the project's code quality checklist and reports file:line findings. Read-only; does not fix anything.
 tools: read, bash, grep, find, ls
 model: openai-codex/gpt-6.1-sol
-thinking: medium
+thinking: high
 systemPromptMode: replace
 inheritProjectContext: true
 inheritSkills: false
