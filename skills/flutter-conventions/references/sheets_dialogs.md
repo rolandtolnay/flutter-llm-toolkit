@@ -129,16 +129,12 @@ extension RefOrderActionsExt on WidgetRef {
     );
     if (!(confirm ?? false) || !context.mounted) return;
 
-    final result = await read(voidOrderProvider(order.id).notifier).voidOrder();
-    if (result != null && context.mounted) {
-      AppToast.show(context, title: tr(LocaleKeys.order_voided));
-      context.pop();
-    }
+    await read(voidOrderProvider(order.id).notifier).voidOrder();
   }
 }
 ```
 
-The sheet's `build` calls `ref.listenOnError(voidOrderProvider(order.id))`, so failures toast through the shared path and the extension only handles success.
+The extension only confirms and triggers the action. The sheet's `build` watches `voidOrderProvider(order.id)` for loading, calls `ref.listenOnError` on it, and uses `ref.listenForCondition` on its non-null data to toast and pop, as in `hooks.md`.
 
 ## Dialogs
 

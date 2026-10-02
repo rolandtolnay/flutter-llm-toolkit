@@ -18,11 +18,12 @@ class CreateCustomer extends _$CreateCustomer {
   Future<CustomerEntity?> build() async => null; // null = idle
 
   Future<void> createCustomer(CreateCustomerDto dto) async {
-    final account = await ref.read(selectedAccountProvider.future);
-    if (!ref.mounted || account == null) return;
-
     state = const AsyncLoading();
-    final result = await AsyncValue.guard(() => _api.createCustomer(dto, account: account));
+    final result = await AsyncValue.guard(() async {
+      final account = await ref.read(selectedAccountProvider.future);
+      if (!ref.mounted || account == null) return null;
+      return _api.createCustomer(dto, account: account);
+    });
     if (!ref.mounted) return;
 
     state = result;

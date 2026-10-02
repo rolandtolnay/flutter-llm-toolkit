@@ -199,6 +199,11 @@ class Debouncer {
     _timer?.cancel();
     _timer = Timer(duration, callback);
   }
+
+  void cancel() {
+    _timer?.cancel();
+    _timer = null;
+  }
 }
 ```
 

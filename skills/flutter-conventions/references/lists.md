@@ -70,12 +70,12 @@ Future<ItemListResult> getItemList({
   return ItemListResult(
     items: response.items.map((e) => e.toEntity()).toList(),
     nextPageToken: response.nextPageToken.isEmpty ? null : response.nextPageToken,
-    hasReachedMax: response.items.length < pageSize,
+    hasReachedMax: response.nextPageToken.isEmpty,
   );
 }
 ```
 
-- `hasReachedMax`: `response.items.length < pageSize`
+- `hasReachedMax`: `response.nextPageToken.isEmpty`; page length does not determine cursor exhaustion
 - Empty `nextPageToken` from API → `null`
 
 ## Provider
@@ -84,14 +84,15 @@ Future<ItemListResult> getItemList({
 @Riverpod(keepAlive: true)
 class ItemList extends _$ItemList {
   ItemApi get _api => ref.read(itemApiProvider);
+  int _listRevision = 0;
 
   @override
   FutureOr<ItemListResult> build() async {
+    _listRevision++;
     final account = await ref.watch(selectedAccountProvider.future);
     if (account == null) return const ItemListResult();
 
     final filter = ref.watch(itemFilterProvider);
-
     return _api.getItemList(account: account, filter: filter);
   }
 
@@ -99,31 +100,32 @@ class ItemList extends _$ItemList {
     if (state.isLoading) return;
     if (state.value?.hasReachedMax ?? false) return;
 
-    state = const AsyncLoading<ItemListResult>().retainPrevious(
-      state,
-      isRefresh: false,
-    );
+    final previous = state.value;
+    final revision = _listRevision;
+    state = const AsyncLoading<ItemListResult>().retainPrevious(state, isRefresh: false);
 
     final account = await ref.read(selectedAccountProvider.future);
+    if (!ref.mounted || revision != _listRevision) return;
     if (account == null) {
-      state = AsyncData(state.value ?? const ItemListResult());
+      state = AsyncData(previous ?? const ItemListResult());
       return;
     }
 
-    state = await AsyncValue.guard(() async {
+    final next = await AsyncValue.guard(() async {
       final filter = ref.read(itemFilterProvider);
       final result = await _api.getItemList(
         account: account,
         filter: filter,
-        pageToken: state.value?.nextPageToken,
+        pageToken: previous?.nextPageToken,
       );
-
-      return state.value!.copyWith(
-        items: [...state.value!.items, ...result.items],
-        nextPageToken: () => result.nextPageToken,
+      return ItemListResult(
+        items: [...?previous?.items, ...result.items],
+        nextPageToken: result.nextPageToken,
         hasReachedMax: result.hasReachedMax,
       );
     });
+    if (!ref.mounted || revision != _listRevision) return;
+    state = next;
   }
 }
 ```
@@ -287,51 +289,7 @@ onRefresh: () async {
 
 ## Stale-Request Guard
 
-A `keepAlive` list notifier rebuilds when a watched dependency changes (account, filter) while an older `loadMore()` may still be in flight. Stamp each build and drop results from an older one:
-
-```dart
-@Riverpod(keepAlive: true)
-class ItemList extends _$ItemList {
-  int _listRevision = 0;
-
-  @override
-  FutureOr<ItemListResult> build() async {
-    _listRevision++;
-    // ...same as above
-  }
-
-  Future<void> loadMore() async {
-    if (state.isLoading) return;
-    if (state.value?.hasReachedMax ?? false) return;
-
-    final previous = state.value;
-    final revision = _listRevision;
-    state = const AsyncLoading<ItemListResult>().retainPrevious(state, isRefresh: false);
-
-    final account = await ref.read(selectedAccountProvider.future);
-    if (!ref.mounted || revision != _listRevision) return;
-    if (account == null) {
-      state = AsyncData(previous ?? const ItemListResult());
-      return;
-    }
-
-    final next = await AsyncValue.guard(() async {
-      final result = await _api.getItemList(
-        account: account,
-        filter: ref.read(itemFilterProvider),
-        pageToken: previous?.nextPageToken,
-      );
-      return ItemListResult(
-        items: [...?previous?.items, ...result.items],
-        nextPageToken: result.nextPageToken,
-        hasReachedMax: result.hasReachedMax,
-      );
-    });
-    if (!ref.mounted || revision != _listRevision) return;
-    state = next;
-  }
-}
-```
+A `keepAlive` list notifier rebuilds when a watched dependency changes (account, filter) while an older `loadMore()` may still be in flight. The provider above stamps each build and drops results from an older one, so an old page cannot overwrite the new account or filter's data.
 
 - Check `ref.mounted` and the revision after every `await`, before any `state =`
 - Merge onto the captured `previous`, not `state.value` read after the await

@@ -128,6 +128,7 @@ class MatchDraft extends _$MatchDraft {
 }
 ```
 
+- `clear()` cancels the pending timer only. A write that already started can resurrect the draft; `_readAndValidate` then offers it again on the next launch, which is acceptable
 - `_readAndValidate` returns `null` and clears storage for missing, corrupt or older-than-`_maxAgeDays` drafts, and resets transient fields such as in-flight upload IDs
 
 ## Entry Modes

@@ -96,7 +96,7 @@ class NetworkException extends AppDioException
 
 ## ParsingException
 
-Thrown on JSON contract mismatch. Captures context for remote debugging.
+Thrown for JSON contract failures wrapped by the response parsing helpers. Captures context for remote debugging.
 
 ```dart
 class ParsingException implements LocalizedException {
@@ -127,7 +127,7 @@ class ParsingException implements LocalizedException {
 }
 ```
 
-Throw when: response body null, JSON structure mismatch, required field missing/wrong type.
+Use for a null response body or invalid JSON structure. Field conversion errors are wrapped only by helpers that catch `fromJson` failures; `parseDataSingle` currently lets those errors propagate unchanged.
 
 ## ResultError
 
@@ -154,7 +154,7 @@ class ResultError implements LocalizedException {
 
 ## Response Parsing Extensions
 
-`extension ResponseParsingEx<T> on Response<T>` keeps API implementations lean: `parseSingle`, `parseWrapped`, `parseList`, `parseDataSingle` and `parseDataList` validate the body shape, call `fromJson`, and wrap any failure in a `ParsingException` carrying `endpoint`, `expectedType`, `rawJson` and `innerError`. List helpers log and skip malformed items instead of failing the whole response. Signatures and body shapes are in `rest_api.md`.
+`extension ResponseParsingEx<T> on Response<T>` keeps API implementations lean: `parseSingle`, `parseWrapped`, `parseList`, `parseDataSingle` and `parseDataList` validate the body shape and call `fromJson`. Wrapped failures become a `ParsingException` carrying `endpoint`, `expectedType`, `rawJson` and `innerError`; `parseDataSingle` does not wrap its `fromJson` call, so field/type mismatches can escape as raw errors such as `TypeError`. List helpers log and skip malformed items instead of failing the whole response. Signatures and body shapes are in `rest_api.md`.
 
 ```dart
 Future<CustomerEntity> getCustomer() async {

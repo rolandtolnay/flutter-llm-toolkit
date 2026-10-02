@@ -63,7 +63,7 @@ useInitAsync(() async {
 });
 ```
 
-Use when setting controller values after first build or calling notifiers that synchronously emit state.
+Use when setting controller values after first build or calling notifiers that synchronously emit state. These scheduling helpers do not handle failures: call guarded action methods and listen for their errors. For data loading, watch the provider and sync its successful value into controllers rather than awaiting a fallible provider future inside the effect.
 
 ### `useAsyncEffect` — async effect with dependencies
 
@@ -99,16 +99,18 @@ class Example extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final saving = ref.watch(saveProvider).isLoading;
+    final initial = ref.watch(initialDataProvider).value;
     final formKey = useMemoized(GlobalKey<FormState>.new);
     final nameController = useTextEditingController();
 
     useListenable(nameController);
 
-    useInitAsync(() async {
-      final initial = await ref.read(initialDataProvider.future);
+    useAsyncEffect(() {
+      if (!context.mounted || initial == null) return;
       nameController.text = initial.name ?? '';
-    });
+    }, [initial]);
 
+    ref.listenOnError(initialDataProvider);
     ref.listenOnError(saveProvider);
 
     Future<void> submit() =>
@@ -224,7 +226,8 @@ void toggle(FilterType t) {
 
 ```dart
 final controller = useTextEditingController();
-final focusNode = widgetFocusNode ?? useFocusNode();
+final ownedFocusNode = useFocusNode();
+final focusNode = widgetFocusNode ?? ownedFocusNode;
 useListenable(controller);
 
 return TextField(
@@ -261,16 +264,12 @@ HookBuilder(
 
 ## Custom Hooks
 
-Function-based composition preferred:
+Prefer package hooks when available (`usePrevious(value)` already returns the value from the previous build). For app-specific hooks, prefer function-based composition:
 
 ```dart
-T? usePrevious<T>(T value) {
-  final ref = useRef<T?>(null);
-  useEffect(() {
-    ref.value = value;
-    return null;
-  }, [value]);
-  return ref.value;
+bool useIsFocused(FocusNode focusNode) {
+  useListenable(focusNode);
+  return focusNode.hasFocus;
 }
 ```
 

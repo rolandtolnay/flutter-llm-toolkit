@@ -67,6 +67,8 @@ enum PosthogState {
 }
 ```
 
+- SDK calls are not serialised across builds. A user change during an in-flight identify can leave the SDK on the previous identity until the next user change or launch; accept that rather than queueing reconciliation
+- `capture` is fire-and-forget: callers never await analytics
 - State is read back from the SDK (distinct id, logged-in attributes) rather than kept in a field, because the SDK persists identity across launches and the notifier does not.
 - `setup` is separate from `build` and is called exactly once, by the startup gate, which owns the `_didSetup*` flag (see `startup_gate.md`). Keys come from backend config.
 - SDK calls inside the notifier are wrapped and logged. A failing SDK degrades its own feature and never fails the session, startup, or the calling screen.

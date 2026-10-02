@@ -96,14 +96,17 @@ class AuthCache {
     _completer = null;
   }
   Future<void> _fetchToken() async {
-    _completer = Completer();
+    final pending = _completer;
+    if (pending != null) return pending.future;
+    final completer = _completer = Completer<void>();
     try {
       _cached = await _sdk.sessionToken();
     } catch (e, st) {
       log.debug('Failed fetching session token', e, st);
+    } finally {
+      completer.complete();
+      if (identical(_completer, completer)) _completer = null;
     }
-    _completer?.complete();
-    _completer = null;
   }
 }
 

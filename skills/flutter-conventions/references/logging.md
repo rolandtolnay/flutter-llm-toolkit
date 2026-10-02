@@ -39,14 +39,14 @@ extension LoggingUtility on Logger {
 ## Message Shape
 
 ```dart
-log.info('Invite sent to ${dto.email}');
+log.info('Invite sent');
 log.warning('Failed fetching access token: $e', e, st);
 log.error('RevenueCat: failed to initialise SDK: $e', e, st);
 ```
 
 - Past tense for what happened, present participle for what is starting (`'Signing out...'`).
-- Include identifiers (`id`, `name`, counts), not whole entities; tokens and secrets never appear in a message. Redact or skip bodies for sensitive services.
-- When an exception is at hand, interpolate `$e` for the console and pass `e, st` as arguments so the crash reporter gets the real object and stack for grouping.
+- Include only non-sensitive identifiers and counts, not names, email addresses or whole entities; tokens and secrets never appear in a message. Redact or skip bodies for sensitive services.
+- When an exception is at hand, interpolate `$e` for the console and pass `e, st` as arguments. `error` records reach the crash reporter as the real exception with its stack; `warning` records are reported by message only, so the message must carry the essentials.
 - Prefix with the subsystem (`'RevenueCat: ...'`, `'[MOCK] ...'`) when the message would be ambiguous outside its file. No per-class `Logger` instances.
 
 ## Where Logging Belongs

@@ -17,8 +17,10 @@ class AppSearch extends _$AppSearch {
   final _debouncer = Debouncer(Duration.zero); // coalesces bursts of keystrokes into one state write
 
   @override
-  AppSearchResult build(Iterable<Searchable> allItems) =>
-      AppSearchResult(items: allItems.sortedByQueryMatch(''), query: '');
+  AppSearchResult build(Iterable<Searchable> allItems) {
+    ref.onDispose(_debouncer.cancel);
+    return AppSearchResult(items: allItems.sortedByQueryMatch(''), query: '');
+  }
 
   void filterInput(String value) {
     _debouncer.run(() {
@@ -98,7 +100,7 @@ Use `max(result, score)` to accumulate best match across fields.
 class MyListWidget extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final items = [...];
+    final items = ref.watch(myEntityListProvider).value ?? const <MyEntity>[];
     final searchProvider = appSearchProvider(items);
     final filtered = ref.watch(searchProvider).items.cast<MyEntity>();
 
@@ -117,6 +119,8 @@ class MyListWidget extends HookConsumerWidget {
   }
 }
 ```
+
+Pass the provider's list (or a widget field) as the family argument. A list built inside `build` is a new argument on every rebuild, which resets the search.
 
 ## Patterns
 

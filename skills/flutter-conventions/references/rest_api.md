@@ -58,6 +58,7 @@ static const _retryHeader = 'x-retry';
 Future<void> onError(DioException err, ErrorInterceptorHandler handler) async {
   if (err.response?.statusCode != 401) return handler.next(err);
   if (err.requestOptions.headers[_retryHeader] == true) return handler.next(err);
+  final RequestOptions retry;
   try {
     final refreshToken = await _getRefreshToken();
     if (refreshToken == null || refreshToken.isEmpty) throw StateError('No refresh token');
@@ -67,21 +68,26 @@ Future<void> onError(DioException err, ErrorInterceptorHandler handler) async {
     final refresh = data?['refreshToken'] as String?;
     if (access == null || refresh == null) throw StateError('Refresh response missing tokens');
     await _saveTokens(access, refresh);
-    final retry = err.requestOptions
+    retry = err.requestOptions
       ..headers['Authorization'] = 'Bearer $access'
       ..headers[_retryHeader] = true;
-    return handler.resolve(await _tokenDio.fetch<dynamic>(retry));
   } catch (_) {
     await _clearTokens();
     return handler.next(err);
+  }
+  try {
+    return handler.resolve(await _tokenDio.fetch<dynamic>(retry));
+  } on DioException catch (replayError) {
+    return handler.next(replayError);
   }
 }
 ```
 
 - `onRequest` adds `Authorization: Bearer <token>` unless `options.path` contains an entry of the static `_publicRoutes` whitelist (login, register, refresh)
-- `QueuedInterceptorsWrapper` serialises concurrent 401s so one refresh serves all of them
+- `QueuedInterceptorsWrapper` serialises 401 handling; this recipe refreshes for each queued 401 rather than deduplicating refreshes
 - Refresh and retry go through the interceptor-free `tokenDio`; using the main Dio deadlocks the queue
-- On failure it clears tokens and forwards the original 401; it does not touch auth state or navigate
+- Refresh failure clears tokens and forwards the original 401. Replay failures continue through the error interceptors without clearing the refreshed tokens
+- Wire `clearTokens` to the app's sign-out flow as described in `auth_session.md`; the interceptor never navigates itself
 
 ## Error Interceptor
 
@@ -143,7 +149,7 @@ ItemApi itemApi(Ref ref) {
 - Paths come from `ApiEndpoint`, a `const` class of getters and path methods (`String item(String id) => '/items/$id'`) grouped by feature
 - Bodies are request DTO `.toJson()` or inline maps; optional keys use null-aware entries: `{'email': ?email}`
 - API methods never catch: interceptors type transport errors, parse helpers type contract errors
-- `isMockMode` is true only in the dev flavor with an explicit `enableMockMode: true` from `main_dev.dart`, and throws if the flag is set in a release build (`bool.fromEnvironment('dart.vm.product')`)
+- `isMockMode` follows the project's environment policy, never build mode alone: a flavor check (`!FlavorConfig.isProd`, so a sandbox release build still runs on mocks) or an explicit dev-only opt-in flag, whichever the project defines
 - Give a feature a mock only when it must run without the backend; otherwise the provider returns the impl unconditionally
 
 ## Mock API
@@ -244,5 +250,5 @@ Future<CustomerEntity> createCustomer(CreateCustomerDto dto, {required AccountEn
 - `try/catch` around Dio calls in API classes or providers to build error messages
 - Hand-parsing `response.data['x'] as int` instead of a parse helper and `fromJson`
 - Strict casts on fields the backend sends loosely instead of the `json_parse_helpers` converters
-- Mock selection keyed on `kDebugMode` alone, reachable in release
+- Mock selection keyed on build mode instead of the project's environment policy
 - Proto messages returned from an API class or held in provider state
