@@ -141,7 +141,7 @@ The gap ladder is ordered `kGapItem < kGapGroup < kGapSection < kGapSectionXl`; 
 
 ## extensions/ref_ext.dart
 
-`extension RefDebugExt on Ref` declares `void debugPrintLifecycle({String? debugName})`, which registers `onAddListener`, `onRemoveListener`, `onCancel`, `onResume` and `onDispose` callbacks that each `log.debug('$debugName <event>')`. A debugging aid for disposal and keep-alive questions; merchant-app has no committed callers.
+`extension RefDebugExt on Ref` declares `void debugPrintLifecycle({String? debugName})`, which registers `onAddListener`, `onRemoveListener`, `onCancel`, `onResume` and `onDispose` callbacks that each `log.debug('$debugName <event>')`. A debugging aid for disposal and keep-alive questions, not for committed code.
 
 ## util/ref_cache.dart
 
@@ -185,7 +185,7 @@ void useAsyncEffectDisposing(Future<Dispose?> Function() effect, [List<Object?>?
 }
 ```
 
-Usage rules are in `hooks.md`. forgeblast_app keeps the same file under `lib/common/hooks/` and adds `VoidCallback useDebounce(VoidCallback callback, Duration delay)` (a `useRef<Timer?>` cancelled on unmount) and `ScrollController useScrollPagination({required VoidCallback onLoadMore, double threshold = 200.0})` (calls `onLoadMore` when within `threshold` of the bottom); add them when a widget needs them.
+Usage rules are in `hooks.md`. Two optional additions, written when a widget first needs them: `VoidCallback useDebounce(VoidCallback callback, Duration delay)` (a `useRef<Timer?>` cancelled on unmount) and `ScrollController useScrollPagination({required VoidCallback onLoadMore, double threshold = 200.0})` (calls `onLoadMore` when within `threshold` of the bottom).
 
 ## util/debouncer.dart
 
@@ -239,8 +239,55 @@ onPressed: () => ref.read(genericStateProvider(key).notifier).perform(() => step
 
 Use it when the caller only needs loading and error. An action whose caller needs the result (a created entity, a success flag to pop on) gets its own named notifier.
 
+## haptic_provider.dart
+
+```dart
+enum HapticType { selection, light, medium, heavy, vibrate, success, error }
+
+@riverpod
+class Haptic extends _$Haptic {
+  static const _key = 'storage_haptic_effects';
+  SharedPreferencesWithCache get _prefs => ref.read(sharedPreferencesProvider).requireValue;
+
+  @override
+  bool build() => _prefs.getBool(_key) ?? true; // user setting: haptics on/off
+
+  void setEnabled({required bool isOn}) {
+    _prefs.setBool(_key, isOn);
+    state = isOn;
+  }
+
+  void feedback(HapticType haptic) {
+    if (!state) return;
+    switch (haptic) {
+      case HapticType.selection: HapticFeedback.selectionClick();
+      case HapticType.light: HapticFeedback.lightImpact();
+      case HapticType.medium: HapticFeedback.mediumImpact();
+      case HapticType.heavy: HapticFeedback.heavyImpact();
+      case HapticType.vibrate: HapticFeedback.vibrate();
+      case HapticType.success: Haptics.vibrate(HapticsType.success); // package:haptic_feedback
+      case HapticType.error: Haptics.vibrate(HapticsType.error);
+    }
+  }
+}
+
+extension HapticConvenience on WidgetRef {
+  void feedbackSelection() => read(hapticProvider.notifier).feedback(HapticType.selection);
+  void feedbackError() => read(hapticProvider.notifier).feedback(HapticType.error);
+  // feedbackLight, feedbackMedium, feedbackHeavy, feedbackSuccess follow the same line
+}
+```
+
+Widgets call `ref.feedbackX()` and never `HapticFeedback` directly, so the user's setting applies everywhere. Typical: `feedbackSelection` on taps that change a selection or copy to the clipboard, `feedbackError` on validation failure, `feedbackSuccess` when a flow completes.
+
+## widgets/app_toast.dart
+
+`AppToast.show(BuildContext context, {required String title})` and `AppToast.showError(BuildContext context, {required Object? error})`, built on the app's toast or snackbar component. `showError` takes the title and message from `LocalizedException` when the error implements it and falls back to the generic uncaught copy (see `error_handling.md`); it is what `listenOnError` calls.
+
+## widgets/button/button_dock.dart
+
+`ButtonDock({required Widget child, EdgeInsets padding = const EdgeInsets.symmetric(vertical: 24)})`: the bottom CTA container used by `ScrollableCtaContent` (`forms.md`) and `AppBottomSheet` (`sheets_dialogs.md`). Vertical padding only; side padding comes from the scaffold.
+
 ## util/show_popup.dart
 
 `Future<bool?> showPopUp({required BuildContext context, required String content, String? title, String? defaultActionLabel, VoidCallback? onDefaultAction, bool dismissible = true})`, a single-action adaptive alert. Behaviour and when to use it are in `sheets_dialogs.md`.
-
-Sources: merchant-app `lib/common/extensions/{widget_ref_ex,async_value_loading_ext,compact_map,list_divider_ext,build_context_ext,scroll_controller_ext,ref_copy_ext,ref_ext}.dart`, `lib/common/util/{use_init_hook,debouncer,generic_state_provider,show_popup}.dart`, `lib/common/app_search_provider.dart`, `lib/auth/widgets/auth_details_input_widget.dart`; forgeblast_app `lib/common/hooks/use_init_hook.dart`, `lib/common/extensions/widget_ref_ex.dart`; boardbit `lib/common/extensions/{ref_ext,compact_map,build_context_ext}.dart`, `lib/common/utils/ref_cache.dart`

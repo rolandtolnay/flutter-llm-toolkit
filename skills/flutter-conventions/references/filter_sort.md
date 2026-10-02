@@ -2,6 +2,12 @@
 
 Typed filter state, the applied-filter provider that lists watch, enum sort with a derived provider, and the sort/filter chip row.
 
+## Layout
+
+- `lib/<feature>/provider/`: `item_filter_state.dart`, `item_filter_provider.dart`, `item_sort.dart` (enum plus the selection notifier), `sorted_items_provider.dart`
+- `lib/<feature>/widgets/`: `item_filter_sheet.dart`, `item_sort_sheet.dart`, `item_sort_filter_row.dart`
+- The filter's transport conversion lives in the feature's API file (`lib/<feature>/domain/item_api.dart`)
+
 ## Choosing the Shape
 
 - Simple criteria → `enum` (sort order, single status)
@@ -27,7 +33,8 @@ class ItemFilterState extends Equatable {
   /// Chip labels for the applied filters.
   Iterable<String> get enabledFilters => [
     ...(statusList ?? []).map((e) => e.title),
-    ?DateRangeChipLabel.build(from: fromDate, to: toDate),
+    if (fromDate != null || toDate != null)
+      [fromDate, toDate].map((d) => d == null ? '…' : DateFormat.yMMMd().format(d)).join(' – '),
   ];
 
   bool isStatusFiltered(ItemStatus status) => (statusList ?? []).contains(status);
@@ -202,5 +209,3 @@ class ItemSortFilterRow extends HookConsumerWidget {
 - Empty list left in a nullable filter field (`[]` ≠ `null`, so a cleared filter no longer equals the default state)
 - Comparators without a tie-breaker, or nulls coerced to `DateTime(0)`
 - Building the proto filter outside the API class
-
-Sources: merchant-app lib/payment_intent/provider/payment_filter_state.dart, lib/payment_intent/provider/payment_filter_provider.dart, lib/payment_intent/widgets/payment_sort_filter_row.dart, lib/payment_intent/widgets/payment_filter_sheet.dart, lib/payment_intent/provider/payment_intent_list_provider.dart, lib/payment_intent/domain/payment_intent_api.dart, lib/invoice/domain/invoice_filter_state.dart; boardbit lib/games/collection/filter/collection_filter_state.dart, lib/games/collection/sort/collection_sort.dart, lib/games/collection/sort/sorted_collection_provider.dart, lib/games/collection/collection_sort_filter_row.dart

@@ -11,6 +11,12 @@ Async list screens with Riverpod: cursor pagination, grouped infinite lists, loa
 5. **Filters**: `ref.watch(filterProvider)` in `build()` triggers auto-refresh on change
 6. **Refresh**: `ref.invalidate(listProvider)` resets pagination
 
+## Layout and Packages
+
+- `InfiniteList` comes from `very_good_infinite_list`; skeletons use `skeletonizer`
+- `lib/common/widgets/list/`: `app_async_list_view.dart`, `app_list_view.dart`, `sticky_infinite_grouped_list.dart`, `sectioned_collection_view.dart`; `lib/common/widgets/error_retry_widget.dart`, `lib/common/widgets/app_skeletonizer.dart`
+- Feature: `lib/<feature>/provider/item_list_provider.dart` with the result model beside it, `lib/<feature>/widgets/item_infinite_list.dart`
+
 ## Result Model
 
 ```dart
@@ -126,22 +132,9 @@ class ItemList extends _$ItemList {
 - `loadMore()`: guards → `.retainPrevious()` → `AsyncValue.guard()` → spread merge
 - Use `ref.watch()` in `build()`, `ref.read()` in `loadMore()`
 
-## AsyncLoading Extension
+## Retaining Previous Data
 
-```dart
-extension AsyncLoadingRetainPrevious<T> on AsyncLoading<T> {
-  AsyncValue<T> retainPrevious(
-    AsyncValue<T> previous, {
-    bool isRefresh = true,
-  }) {
-    // ignore: invalid_use_of_internal_member
-    return copyWithPrevious(previous, isRefresh: isRefresh);
-  }
-}
-```
-
-- `isRefresh: true` → full screen refresh (pull-to-refresh)
-- `isRefresh: false` → pagination (loading indicator at list bottom)
+`retainPrevious` (defined in `common_kit.md`) wraps Riverpod's `copyWithPrevious`: `isRefresh: true` keeps content during a full refresh (pull-to-refresh), `isRefresh: false` marks pagination so the loading indicator renders at the list bottom.
 
 ## Widget
 
@@ -210,8 +203,8 @@ class ItemInfiniteList extends HookConsumerWidget {
   Widget _buildEmptyWidget(WidgetRef ref) {
     return Text(
       tr(LocaleKeys.items_empty),
-      style: ref.context.typography.p.copyWith(
-        color: ref.context.color.mutedForeground,
+      style: ref.context.typography.body1.copyWith(
+        color: ref.context.color.textLow,
       ),
     );
   }
@@ -240,44 +233,7 @@ class ItemInfiniteList extends HookConsumerWidget {
 
 ## Filter Integration
 
-### Filter State
-
-```dart
-class ItemFilterState extends Equatable {
-  final DateTimeRange? dateRange;
-  final ItemStatus? status;
-
-  const ItemFilterState({this.dateRange, this.status});
-
-  int get filterCount => [dateRange, status].whereType<Object>().length;
-  bool get hasFilters => filterCount > 0;
-
-  @override
-  List<Object?> get props => [dateRange, status];
-}
-```
-
-### Filter Provider
-
-```dart
-@riverpod
-class ItemFilter extends _$ItemFilter {
-  @override
-  ItemFilterState build() => const ItemFilterState();
-
-  void setDateRange(DateTimeRange? range) {
-    state = ItemFilterState(dateRange: range, status: state.status);
-  }
-
-  void setStatus(ItemStatus? status) {
-    state = ItemFilterState(dateRange: state.dateRange, status: status);
-  }
-
-  void clearAll() {
-    state = const ItemFilterState();
-  }
-}
-```
+The filter state class and the applied-filter provider are in `filter_sort.md`. The list provider `ref.watch`es the applied filter in `build()`, so applying a filter refetches from page one.
 
 ### Filter-Aware Empty State
 
@@ -293,8 +249,8 @@ Widget _buildEmptyWidget(WidgetRef ref) {
         hasFilters
             ? tr(LocaleKeys.items_empty_filtered)
             : tr(LocaleKeys.items_empty),
-        style: ref.context.typography.p.copyWith(
-          color: ref.context.color.mutedForeground,
+        style: ref.context.typography.body1.copyWith(
+          color: ref.context.color.textLow,
         ),
       ),
       if (hasFilters) ...[
@@ -409,7 +365,7 @@ StickyInfiniteGroupedList<OrderEntity, DateTime>(
 - `onFetchData` fires within `fetchThreshold` of the bottom only when not loading, not errored and not at max
 - Headers that need their own data use a `Consumer` inside `groupHeaderBuilder` (e.g. a per-day sum provider)
 - Guard `state.value == null` before it, as in the `InfiniteList` widget above
-- Bounded (non-paginated) sectioned lists or grids: boardbit's `SectionedCollectionView<T extends Equatable>` takes pre-grouped `sections` and adds pinned headers and a collapsible top bar
+- Bounded (non-paginated) sectioned lists or grids: `SectionedCollectionView<T extends Equatable>` takes pre-grouped `sections` and adds pinned headers and a collapsible top bar
 
 ## Loading, Error and Empty States
 
@@ -478,7 +434,7 @@ class _MemberItem extends _ListItem { _MemberItem({required this.member}); final
 
 - `makeItems` runs on stubs too, so skeleton rows have the same structure as real rows
 - Pass `remakeKeys` when `makeItems` reads state other than the entity list (e.g. `[members, invites, canInvite]`)
-- boardbit keeps generic item types beside the widget: `sealed class AppListItem` with `AppListHeaderItem`, `AppListEntityItem<T>`, `AppListWidgetItem`, `AppListEmptyItem`
+- A generic alternative to per-screen sealed items, kept beside the widget: `sealed class AppListItem` with `AppListHeaderItem`, `AppListEntityItem<T>`, `AppListWidgetItem`, `AppListEmptyItem`
 
 ## Skeletons
 
@@ -506,42 +462,6 @@ class AppSkeletonizer extends StatelessWidget {
 - `Entity.stub()` lives on the entity (domain layer) and needs no arguments for the common case
 - Outside lists, wrap the real content: `AppSkeletonizer(loading: state.isLoading, child: content)`
 
-## Checklist
-
-### Result Model
-- Extends `Equatable`
-- `copyWith` uses `T? Function()?` for nullable fields
-- Default: `items = const []`, `hasReachedMax = true`
-
-### API
-- Accepts `pageSize` and `pageToken`
-- `hasReachedMax = response.length < pageSize`
-- Empty `nextPageToken` → `null`
-- DTO/proto to entity conversion in API layer
-
-### Provider
-- `@Riverpod(keepAlive: true)`
-- `build()` fetches initial page, watches dependencies for auto-refresh
-- `loadMore()` guards: `isLoading`, `hasReachedMax`
-- `.retainPrevious(state, isRefresh: false)` for loading state
-- `AsyncValue.guard()` for error handling
-- `[...existing, ...new]` for immutable merge
-- `ref.read()` (not `watch`) in `loadMore()`
-
-### Widget
-- Guard `state.value == null` for initial loading/error
-- Pass `state.isLoading`, `state.hasError`, `state.value?.hasReachedMax` to `InfiniteList`
-- `useMemoized` for expensive transforms (sorting, filtering)
-- Error builder retries via `notifier.loadMore()`
-- Empty builder filter-aware when filters exist
-- `onRefresh` → `ref.invalidate(provider)`
-
-### Filters
-- Filter state extends `Equatable`
-- Filter provider has `clearAll()` method
-- List provider watches filter in `build()` for auto-refresh
-- Empty state shows "clear filters" when filters active
-
 ## Anti-Patterns (flag these)
 
 - Full-screen loader or error on refresh when data already exists
@@ -549,5 +469,3 @@ class AppSkeletonizer extends StatelessWidget {
 - `loadMore()` writing `state` after an `await` without the mounted/revision check
 - Spinner instead of stub-based skeleton for bounded lists
 - `ErrorRetryWidget` for item-action failures (toast them; the list is still valid)
-
-Sources: merchant-app lib/common/widgets/list/app_async_list_view.dart, lib/common/widgets/list/app_list_view.dart, lib/common/widgets/list/sticky_infinite_grouped_list.dart, lib/common/widgets/molecules/error_retry_widget.dart, lib/common/widgets/app_skeletonizer.dart, lib/common/extensions/build_context_ext.dart, lib/payment_intent/provider/payment_intent_list_provider.dart, lib/payment_intent/payment_infinite_list.dart, lib/payment_intent/domain/payment_intent_entity.dart, lib/more/member_list_screen.dart; boardbit lib/common/widgets/list/app_async_list_view.dart, lib/common/widgets/list/sectioned_collection_view.dart

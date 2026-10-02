@@ -58,8 +58,8 @@ Opinionated rules for Flutter code in this family of apps. Each rule is a lint t
 - Validation in Validator class: `validator.validateEmail(email)`
 - Feature-specific translation keys: `LocaleKeys.validation_email_required`
 - Label optional fields explicitly: `'Email (optional)'`
-- Semantic spacing: `Spacing.section` between major sections
-- Framework widgets over generic: `CustomSlider` not `Slider`
+- Semantic spacing: `kGapSection` between major sections
+- App design-system widgets over raw Material: `AppSlider` not `Slider`
 - Clean placeholders: `'Acme Corp'` not `'e.g. Acme Corp'`
 - Consistent typography scales for form labels: `context.typography.heading` for section titles
 - Extract complex validation into named methods: `bool hasValidInput()`

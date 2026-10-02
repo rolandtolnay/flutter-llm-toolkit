@@ -2,6 +2,11 @@
 
 Form screens: hook-owned inputs, `Validator`-delegated validation, DTO submission through an action provider, listener-driven outcomes.
 
+## Layout
+
+- Shared: `lib/common/util/validator.dart`, `lib/common/util/use_ensure_visible_on_focus.dart`, `lib/common/widgets/container/scrollable_cta_content.dart`, `lib/common/widgets/input/` (app text inputs), `lib/common/haptic_provider.dart`
+- Feature: `lib/<feature>/widgets/create_item_form.dart` with `lib/<feature>/provider/create_item_provider.dart`; the screen that hosts the form passes `onCreated`
+
 ## Action Provider
 
 ```dart
@@ -116,8 +121,7 @@ class CreateCustomerForm extends HookConsumerWidget {
 - Outcomes come from `ref.listen` (success → callback or navigation) and `ref.listenOnError` (toast), not from the awaited call
 - `listenOnError<T>(ProviderListenable<T> provider, {void Function(Object)? onError, bool Function(Object)? ignoreIf})` shows the toast itself; `onError` adds side effects
 - Disable the CTA until valid when validity is cheap to derive from controllers (`useListenable`, or a `ValueListenableBuilder` around just the button); otherwise validate on tap
-- Haptics: `ref.feedbackError()` on validation failure via the app's `hapticProvider` extension on `WidgetRef`; skip when the app has none
-- merchant-app uses `ShadForm` + `GlobalKey<ShadFormState>` with `AppTextInput` (wraps `ShadInputFormField`, exposes `focusNode` and `validator`); the shape is the same
+- Haptics: `ref.feedbackError()` on validation failure, from the `WidgetRef` haptics extension in `common_kit.md`
 
 ## Async Validation
 
@@ -158,5 +162,3 @@ useEnsureVisibleOnFocus(notesFocus, key: notesKey);
 - Validation rules or hardcoded messages inline in `validator:` lambdas
 - `try/catch` around the notifier call in the widget
 - Untrimmed `controller.text` in the DTO
-
-Sources: merchant-app lib/customer/widgets/create_customer_form.dart, lib/customer/provider/create_customer_provider.dart, lib/common/util/validator.dart, lib/common/widgets/input/app_text_input.dart, lib/common/widgets/container/scrollable_cta_content.dart, lib/common/extensions/widget_ref_ex.dart, lib/common/haptic_provider.dart, lib/take_payment/widgets/take_payment_new_customer_widget.dart, lib/auth/widgets/auth_details_input_widget.dart, lib/boarding/widgets/boarding_content.dart; boardbit lib/common/utils/use_ensure_visible_on_focus.dart

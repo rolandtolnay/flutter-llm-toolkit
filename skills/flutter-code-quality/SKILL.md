@@ -13,7 +13,7 @@ The files changed by the current task: `git diff --name-only` plus untracked `.d
 
 ## Running the check
 
-Delegate to the `flutter-code-quality-reviewer` subagent with the file list. In Claude Code that is the Agent tool with that subagent type; in Pi it is `subagent_run` with that agent name. When no such subagent is installed, read `references/checklist.md` yourself and review the files against it.
+Delegate to the `flutter-code-quality-reviewer` subagent with the file list, through whatever your harness provides for running a named subagent. Without such a subagent, read `references/checklist.md` yourself and review the files against it.
 
 The subagent returns findings grouped by file, each as `path:line - issue → fix`, and `✓ pass` for clean files. It does not edit anything.
 

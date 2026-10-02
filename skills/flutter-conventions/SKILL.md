@@ -7,7 +7,7 @@ description: Conventions and proven patterns for Flutter apps built with Riverpo
 
 How this family of apps is built. The rules below apply to every change; the `references/` files hold the shapes for specific tasks and are read when the task touches them. Project `AGENTS.md` files add project-specific facts (commands, backend, branding) and override anything here when they conflict.
 
-Stack: Flutter stable, Riverpod 3 with code generation, flutter_hooks, auto_route, easy_localization, Equatable, `package:collection`. Backends vary (gRPC, REST over Dio, Firebase); the layering does not.
+Stack: Flutter stable, Riverpod 3 with code generation, flutter_hooks, auto_route, easy_localization, Equatable, `package:collection`, `package:logging`, Lucide icons. Backends vary (gRPC, REST over Dio, Firebase); the layering does not.
 
 ## Architecture
 
@@ -34,7 +34,8 @@ Before creating a widget, look in `lib/common/widgets/` and the feature's `widge
 - Screens are `HookConsumerWidget`; smaller widgets are `HookWidget` or `StatelessWidget`. `StatefulWidget` only when a hook cannot express the lifecycle.
 - Inside `build()`: providers, then hooks, then derived values, then widget variables in render order. Always-shown subtrees are local variables, conditional ones are `_buildX()` methods, large or reused or stateful ones are their own widget in their own file. No file-private widget classes.
 - Helpers needing four or more locals (hooks, controllers) are closures inside `build()`; otherwise class methods. Pass `WidgetRef` alone when a helper needs both ref and context (`ref.context`).
-- Styling comes from `context.color`, `context.typography` and the spacing constants (`kGapItem`, `kGapSection`, `kSide`, `kCorner`). No hex literals or magic numbers in widgets.
+- Styling comes from `context.color`, `context.typography` and the spacing constants (`kGapItem`, `kGapSection`, `kSide`, `kCorner`); icons from `LucideIcons`. No hex literals or magic numbers in widgets.
+- Shared widgets (`AppPrimaryButton`, `AppBottomSheet`, `AppTextField`, `AppChip`) are written in `lib/common/widgets/` on top of Material widgets and the theme tokens. No third-party component kit; the app owns its design system.
 
 Details: `references/widget_style_guide.md`, `references/hooks.md`, `references/design_principles.md`.
 
@@ -74,7 +75,8 @@ Use the newest syntax the project's SDK constraint allows (`environment: sdk:` i
 | Bottom sheets, dialogs, confirmations | `references/sheets_dialogs.md` |
 | Multi-step flows, drafts | `references/wizard.md` |
 | Routes, tabs, deep-linkable screens, typed results | `references/navigation.md` |
-| App entry, flavors, container, logging | `references/app_bootstrap.md` |
+| App entry, flavors, container | `references/app_bootstrap.md` |
+| Log levels, what to log where, transport logging, crash reporter routing | `references/logging.md` |
 | Splash, startup checks, forced update | `references/startup_gate.md` |
 | Auth state, sign-out, account selection | `references/auth_session.md` |
 | Analytics, support, purchases or push SDK wrappers | `references/sdk_session.md` |

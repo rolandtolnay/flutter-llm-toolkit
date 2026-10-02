@@ -20,6 +20,7 @@ class ImageSourceSheet extends StatelessWidget {
 
 - Results leave through `Navigator.pop(context, value)` / `context.router.maybePop(value)`; a `null` result always means dismissed.
 - Sheets that only perform actions return `Future<void>`.
+- Feature sheets live in `lib/<feature>/widgets/`; shared ones (`app_bottom_sheet.dart`, `native_confirmation_sheet.dart`) in `lib/common/widgets/sheet/`.
 
 ## showAppBottomSheet
 
@@ -52,7 +53,7 @@ Future<T?> showAppBottomSheet<T>({
 
 ```dart
 const AppBottomSheet({
-  this.title,                // centred, context.typography.h4
+  this.title,                // centred, context.typography.headline
   required this.body,        // wrap in Expanded when it scrolls
   this.constraints,          // defaults to BoxConstraints(maxHeight: context.screenHeight * 0.8)
   this.titleGap = kGapSection,
@@ -152,5 +153,3 @@ The sheet's `build` calls `ref.listenOnError(voidOrderProvider(order.id))`, so f
 - A feature-owned sheet receiving provider data or callbacks through its constructor that it could watch itself.
 - `confirm!` on a confirmation result; dismissal returns `null`, so test `confirm ?? false`.
 - Using `context` after awaiting a sheet or dialog without a `context.mounted` check.
-
-Sources: merchant-app `lib/common/widgets/sheet/{app_bottom_sheet,native_confirmation_sheet}.dart`, `lib/common/util/show_popup.dart`, `lib/payment_intent/widgets/{payment_filter_sheet,payment_action_sheet,payment_sort_filter_row}.dart`, `lib/payment_intent/payment_detail_screen.dart`, `lib/invoice/widgets/invoice_action_sheet.dart`, `lib/more/widgets/delete_account_sheet.dart`; forgeblast_app `lib/common/widgets/image_source_sheet.dart`

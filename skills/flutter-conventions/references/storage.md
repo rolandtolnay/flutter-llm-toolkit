@@ -2,6 +2,11 @@
 
 Local key-value persistence: storage providers and bootstrap, the `AppStorage` facade, key naming, feature-owned accessors, persisted preferences.
 
+## Layout
+
+- `lib/common/storage/`: `storage_provider.dart` (secure storage and preferences providers), `app_storage.dart`; `lib/common/first_launch_provider.dart`
+- Typed accessors and persisted preferences live in the feature `provider/` file that owns the data
+
 ## Providers and Bootstrap
 
 ```dart
@@ -128,7 +133,7 @@ Synchronous preferences (theme, formats, first-launch flag) read the cached pref
 
 ## Variant: Defensive Reads and Disposable Caches
 
-From boardbit, for apps with typed prefs and an on-device object cache:
+For apps with typed prefs and an on-device object cache (Hive):
 - A typed prefs wrapper catches wrong-type reads per getter: log, `remove(key)`, return `null`, so a type change in a later release self-heals.
 - Hive boxes hold disposable caches only. A schema version int lives in prefs; `init()` deletes the box from disk when the stored version is below the code constant, and on open failure deletes the boxes and retries once. Bump the constant whenever adapters change.
 
@@ -146,5 +151,3 @@ if (_prefs.gameBoxVersion < _kGameBoxVersion) {
 - Inline key strings repeated across files, or keys without the `com.<app>.` namespace
 - Writing a non-`String` through `AppStorage.write`: it is dropped with only a log line
 - Keeping data in Hive that cannot be re-fetched, which a schema bump deletes
-
-Sources: merchant-app `lib/common/storage/app_storage.dart`, `lib/common/storage/storage_provider.dart`, `lib/root/application.dart`, `lib/run_app.dart`, `lib/common/first_launch_provider.dart`, `lib/payment_intent/provider/account_default_currency_provider.dart`, `lib/payment_intent/provider/currency_format_provider.dart`, `lib/boarding/provider/boarding_builder_provider.dart`; boardbit `lib/common/storage/app_shared_prefs.dart`, `lib/common/storage/object_storage_api.dart`

@@ -70,7 +70,7 @@ Refreshing a list that already has data keeps the old items visible: `state = co
 
 ## Riverpod 2 → 3
 
-Projects still on Riverpod 2 (boardbit) differ in these places; the shapes above assume 3.
+Projects still on Riverpod 2 differ in these places; the shapes above assume 3.
 
 - Generated refs are gone: every provider takes `Ref ref`, not `FooRef ref`.
 - `ref.mounted` exists; in 2 the equivalent was a manual `var disposed = false` flag set in `onDispose`.

@@ -2,6 +2,11 @@
 
 KeepAlive notifiers that keep a third-party SDK's user session (analytics, support chat, purchases, push) in step with the app's signed-in user, plus typed events and remote config read from analytics feature flags.
 
+## Layout
+
+- `lib/startup/`: one `<sdk>_provider.dart` per SDK, `<sdk>_event.dart` for typed events, `remote_config_{api,provider,key,value}.dart`
+- An SDK that serves a single feature (purchases, push) can live in that feature's `domain/` instead
+
 ## Shape
 
 One `@Riverpod(keepAlive: true)` notifier per SDK. `build` watches the user provider and reconciles the SDK's identity with it: identify on login, reset and re-identify on identity change, reset on logout. Since `build` re-runs on every user change, nothing else calls login or logout on the SDK.
@@ -92,8 +97,8 @@ extension WidgetRefEventCapture on WidgetRef {
 
 ## Variants
 
-- **Intercom (merchant-app):** state is `signedOut` / `anonymous` / `identified`, read from `fetchLoggedInUserAttributes()`. Only onboarded users are identified, after `setUserHash(hash)` from a backend identity-verification provider; everyone else gets `loginUnidentifiedUser`. `build` also re-subscribes to `onTokenRefresh`, cancelling the subscription in `ref.onDispose`, and pushes the token once identified.
-- **RevenueCat / OneSignal (forgeblast):** the SDK cannot cheaply report identity, so the notifier tracks `String? _currentUserId` and `bool _sdkInitialized` fields and branches on initialise, switch user, or log out. These self-initialise inside `build` from `FlavorConfig` keys, and `runMainApp` starts them with `container.read(provider)` when the key is non-empty. RevenueCat calls `Purchases.configure` on the first login, passing that user as `appUserID`. Check `ref.mounted` after every SDK await before mutating the fields.
+- **Support chat (Intercom):** state is `signedOut` / `anonymous` / `identified`, read from `fetchLoggedInUserAttributes()`. Only onboarded users are identified, after `setUserHash(hash)` from a backend identity-verification provider; everyone else gets `loginUnidentifiedUser`. `build` also re-subscribes to `onTokenRefresh`, cancelling the subscription in `ref.onDispose`, and pushes the token once identified.
+- **Purchases and push (RevenueCat, OneSignal):** the SDK cannot cheaply report identity, so the notifier tracks `String? _currentUserId` and `bool _sdkInitialized` fields and branches on initialise, switch user, or log out. These self-initialise inside `build` from `FlavorConfig` keys, and the run-app function starts them with `container.read(provider)` when the key is non-empty. RevenueCat calls `Purchases.configure` on the first login, passing that user as `appUserID`. Check `ref.mounted` after every SDK await before mutating the fields.
 
 ## Remote Config via Feature-Flag Payloads
 
@@ -146,5 +151,3 @@ class RemoteConfig extends _$RemoteConfig {
 - Invalidating the watched auth/user provider from code that runs during the session's `build`, which creates a rebuild loop that can sign the user out
 - Calling the SDK directly from widgets for events, or using raw string event names
 - Treating an auth/user error as logout and resetting analytics or push identity on a network blip
-
-Sources: merchant-app `lib/startup/posthog_provider.dart`, `lib/startup/posthog_event.dart`, `lib/startup/intercom_provider.dart`, `lib/startup/remote_config_api.dart`, `lib/startup/remote_config_provider.dart`, `lib/startup/remote_config_key.dart`, `lib/startup/remote_config_value.dart`, `lib/root/application.dart`; forgeblast_app `lib/blast_pass/domain/revenuecat_service.dart`, `lib/notifications/domain/onesignal_service.dart`, `lib/run_app.dart`.

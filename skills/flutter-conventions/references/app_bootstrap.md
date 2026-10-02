@@ -1,6 +1,11 @@
 # App Bootstrap
 
-Flavor entry points, the shared run-app function, the root `ProviderContainer`, and logging wired to the crash reporter.
+Flavor entry points, the shared run-app function, the root `ProviderContainer`, and where logging and crash reporting start.
+
+## Layout
+
+- `lib/main_<flavor>.dart` per flavor, `lib/run_app.dart` (`runMainApp`), `lib/flavor_config.dart`
+- `lib/common/`: `init_logging.dart` (see `logging.md`), `provider_failure_observer.dart`, `first_launch_provider.dart`; storage providers in `lib/common/storage/` (see `storage.md`)
 
 ## Flavor Entry Points
 
@@ -109,42 +114,10 @@ final class ProviderFailureObserver extends ProviderObserver {
 
 ## Logging
 
-```dart
-final log = Logger.root;
-void initLogging() {
-  log.level = kDebugMode ? Level.FINE : Level.INFO;
-  log.onRecord.listen(_processLogRecord);
-}
-
-void _processLogRecord(LogRecord record) {
-  _printColored(record); // dart:developer log, red/yellow/green/blue by level
-  switch (record.level) {
-    case >= Level.SEVERE:
-      Sentry.captureException(record.error ?? record.message, stackTrace: record.stackTrace);
-    case Level.WARNING:
-      Sentry.captureMessage(record.message, level: SentryLevel.warning);
-    case Level.INFO:
-    case Level.FINE:
-      Sentry.addBreadcrumb(record.toBreadcrumb());
-    case _:
-  }
-}
-
-extension LoggingUtility on Logger {
-  void error(Object? message, [Object? error, StackTrace? stackTrace]) => severe(message, error, stackTrace);
-  void debug(Object? message, [Object? error, StackTrace? stackTrace]) => fine(message, error, stackTrace);
-  void verbose(Object? message, [Object? error, StackTrace? stackTrace]) => finer(message, error, stackTrace);
-}
-```
-
-- Code logs through the global `log` and never calls the crash reporter directly. The listener routes by severity: SEVERE becomes a reported exception, WARNING a non-fatal report, INFO/FINE breadcrumb context.
-- Sentry: the DSN comes from backend config, so `SentryFlutter.init` runs in the startup gate; earlier `Sentry.*` calls are no-ops, and `beforeSend` drops events outside release builds.
-- Crashlytics: init after `Firebase.initializeApp`, pass the instance into `initLogging(crashlytics)`, report only when `!kDebugMode` (`crashlytics.log` for every record, `recordError(..., fatal: level >= SEVERE)` for WARNING and up), and wrap the run function in `runZonedGuarded` to record uncaught errors as fatal. Use `Logger.detached('AppName')` when a dependency (e.g. go_router) also logs to the root logger.
+`initLogging()` runs right after the container is built and before any provider is read, so every later record reaches the console and the crash reporter. With Crashlytics, initialise it after `Firebase.initializeApp`, pass the instance in, and wrap the run function in `runZonedGuarded` so uncaught errors are recorded as fatal. The logger, levels and routing are in `logging.md`.
 
 ## Anti-Patterns (flag these)
 
 - Branching on `isDev` or a dev-only flag where `isProd` is the real distinction
 - Reading `sharedPreferencesProvider.requireValue` in a provider created before bootstrap awaited it
 - `ProviderScope(overrides: ...)` with a fresh container when bootstrap already built one: the awaited warm-ups are lost
-
-Sources: merchant-app `lib/main_prod.dart`, `lib/main_dev.dart`, `lib/run_app.dart`, `lib/flavor_config.dart`, `lib/common/init_logging.dart`, `lib/common/provider_failure_observer.dart`, `lib/common/first_launch_provider.dart`, `lib/common/storage/storage_provider.dart`; forgeblast_app `lib/run_app.dart`, `lib/flavor_config.dart`, `lib/common/provider_failure_observer.dart`; boardbit `lib/run_app.dart`, `lib/common/data/init_logging.dart`.

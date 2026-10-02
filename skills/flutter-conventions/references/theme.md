@@ -1,10 +1,10 @@
 # Theme
 
-Brightness-resolved colour and typography tokens, the app `ThemeData`, the persisted theme mode and shared motion constants. Spacing constants are in `common_kit.md`.
+Brightness-resolved colour and typography tokens, the app `ThemeData`, the persisted theme mode, shared motion constants and the icon set. Spacing constants are in `common_kit.md`.
 
 ## Access and Tokens
 
-Widgets reach every colour and text style through `context.color` and `context.typography`. Token classes are plain `const` classes in `lib/common/theme/`; the dark class extends the light one and overrides only what differs.
+Widgets reach every colour and text style through `context.color` and `context.typography`, declared in `lib/common/extensions/build_context_ext.dart`. Token classes are plain `const` classes in `lib/common/theme/` (`app_color.dart`, `app_typography.dart`, `app_theme.dart`, `app_animation.dart`); the dark class extends the light one and overrides only what differs.
 
 ```dart
 extension BuildContextTheme on BuildContext {
@@ -51,13 +51,13 @@ class TypographyDark extends TypographyLight {
 ```
 
 - Name colour tokens by role (`bgCard`, `textMed`, `onBrand`) or scale step (`brand500`), never by hue.
-- Typography is a small semantic scale on a 4-pt grid (explicit `height`) with the token colour baked in; the dark class only swaps colours. forgeblast_app's single `AppTypography` with `light()`/`dark()` factories is an equivalent shape.
+- Typography is a small semantic scale on a 4-pt grid (explicit `height`) with the token colour baked in; the dark class only swaps colours. A single `AppTypography` with `light()`/`dark()` factories is an equivalent shape.
 
 ## App Theme and Theme Mode
 
 `AppTheme.light` / `AppTheme.dark` are static getters that build `ThemeData` (colour scheme, scaffold background, app bar, button, input and card themes) from `const AppColorLight()` / `const AppColorDark()`, so Material widgets need no per-widget styling. `Application` passes `theme: AppTheme.light`, `darkTheme: AppTheme.dark`, `themeMode: ref.watch(savedThemeModeProvider)`.
 
-`SavedThemeMode` is the persisted-preference notifier shown in `storage.md`; it reads the stored `ThemeMode` name from cached preferences and writes it on change. Default to `ThemeMode.system` unless the product is single-mode by design (forgeblast_app defaults to dark).
+`SavedThemeMode` is the persisted-preference notifier shown in `storage.md`; it reads the stored `ThemeMode` name from cached preferences and writes it on change. Default to `ThemeMode.system` unless the product is single-mode by design.
 
 ## Motion Constants
 
@@ -73,9 +73,9 @@ class AppAnimation {
 }
 ```
 
-## Shadcn Variant
+## Icons
 
-merchant-app uses `shadcn_ui`: `AppColor extends ShadColorScheme` adds app tokens, and `ShadApp.router` gets light/dark `ShadThemeData` built from `AppColor` constants and `AppTypography` styles. `ShadAnimatedTheme` lerps the scheme back to a base `ShadColorScheme`, so `context.color` rebuilds it via `AppColor.fromShadScheme(ShadTheme.of(this).colorScheme, this)`; `context.typography` returns `ShadTextTheme`. Use this shape only when the app is built on shadcn components.
+Lucide is the icon set, from the `lucide_icons_flutter` package (`import 'package:lucide_icons_flutter/lucide_icons.dart'`): `Icon(LucideIcons.chevronRight)`, `LucideIcons.plus`, `LucideIcons.trash2`, `LucideIcons.x`. Material `Icons.*` only where the platform convention demands its glyph (the share icon on iOS, for example). Icon colour comes from `context.color`, size from a small set of constants beside the spacing ladder.
 
 ## Anti-Patterns (flag these)
 
@@ -83,5 +83,3 @@ merchant-app uses `shadcn_ui`: `AppColor extends ShadColorScheme` adds app token
 - `Theme.of(context).colorScheme.*` in feature widgets instead of `context.color.*`.
 - `context.darkMode ? … : …` in a widget to pick a colour; put the difference in an `AppColorDark` override.
 - Literal `Duration(milliseconds: …)` or ad-hoc curves for UI motion instead of `AppAnimation`.
-
-Sources: merchant-app `lib/common/extensions/build_context_ext.dart`, `lib/common/theme/{app_color,app_typography}.dart`, `lib/common/constants/app_animation.dart`, `lib/root/application.dart`; boardbit `lib/common/extensions/build_context_ext.dart`, `lib/common/theme/{app_animation,app_color,app_typography}.dart`, `lib/root/application.dart`; forgeblast_app `lib/common/theme/{app_color,app_typography,app_theme,saved_theme_mode_provider}.dart`, `lib/common/extensions/build_context_ext.dart`

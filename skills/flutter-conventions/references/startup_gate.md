@@ -2,6 +2,11 @@
 
 How the splash screen initialises SDKs and config, picks the first screen, and handles first-load failure. Two providers split the work: keepAlive `AppStartup` does one-time init, and auto-dispose `StartupDestination` re-resolves the route on every splash visit, including after session expiry recreates the router.
 
+## Layout
+
+- `lib/startup/`: `app_startup_provider.dart`, `startup_destination_provider.dart`, `app_config_provider.dart` (the backend config fetch and `AppConfig`)
+- `lib/root/`: `splash_screen.dart`, `app_update_dialog.dart`, `maintenance_view.dart`
+
 ## Startup Provider
 
 ```dart
@@ -146,5 +151,3 @@ class SplashScreen extends HookConsumerWidget {
 - Navigating from `build`, or from `ref.listen` without a once-per-visit guard, which causes a double `replace` or a missed initial value
 - A dismissible update dialog, or one that routes onward after closing
 - Catching auth errors in startup and returning sign-in, so a network blip logs out a valid session
-
-Sources: merchant-app `lib/startup/app_startup_provider.dart`, `lib/startup/startup_destination_provider.dart`, `lib/startup/app_config_provider.dart`, `lib/root/splash_screen.dart`, `lib/root/app_update_dialog.dart`, `lib/root/app_router.dart`, `lib/common/util/use_init_hook.dart`; forgeblast_app `lib/auth/providers/app_startup_provider.dart`, `lib/auth/splash_screen.dart`, `lib/version/version_check_provider.dart`.

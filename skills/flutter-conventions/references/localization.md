@@ -132,7 +132,7 @@ Future<void> main() async {
 }
 ```
 
-The app widget forwards `context.localizationDelegates`, `context.supportedLocales` and `context.locale` to `MaterialApp`/`ShadApp`.
+The app widget forwards `context.localizationDelegates`, `context.supportedLocales` and `context.locale` to `MaterialApp`.
 
 ## Usage
 

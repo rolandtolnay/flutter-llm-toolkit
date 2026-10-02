@@ -9,7 +9,7 @@ Every exception type has **distinct localized title and message** — user scree
 ```
 Exception
 ├── LocalizedException (interface)      → UI-displayable errors with title + message
-├── ExpectedException (marker)          → Skip Crashlytics reporting
+├── ExpectedException (marker)          → Skip crash reporting
 │
 ├── AppDioException (abstract)          → Network/API errors
 │   ├── ApiException                    → Server errors (4xx/5xx)
@@ -24,7 +24,7 @@ Exception
     └── [Feature]Exception
 ```
 
-| Exception | When | Crashlytics |
+| Exception | When | Crash report |
 |-----------|------|-------------|
 | `ApiException` | Server error response (4xx/5xx) | Report |
 | `NoInternetException` | No connectivity (SocketException) | Skip |
@@ -96,7 +96,7 @@ class NetworkException extends AppDioException
 
 ## ParsingException
 
-Thrown on JSON contract mismatch. Captures context for Crashlytics debugging.
+Thrown on JSON contract mismatch. Captures context for remote debugging.
 
 ```dart
 class ParsingException implements LocalizedException {
@@ -131,7 +131,7 @@ Throw when: response body null, JSON structure mismatch, required field missing/
 
 ## ResultError
 
-Frontend bugs — invalid state that shouldn't occur. Always reported to Crashlytics.
+Frontend bugs — invalid state that shouldn't occur. Always reported to the crash reporter.
 
 ```dart
 class ResultError implements LocalizedException {
@@ -167,7 +167,7 @@ Always pass `endpoint:`; it is the only request context a parsing failure carrie
 
 ## DomainException
 
-Expected business logic errors. Implements both `LocalizedException` and `ExpectedException` (skips Crashlytics).
+Expected business logic errors. Implements both `LocalizedException` and `ExpectedException` (skips crash reporting).
 
 Create when: specific UI flow needed, feature-specific error copy, business rule violation tracking from screenshots. Don't create for errors that should use generic `ApiException` handling.
 
@@ -233,7 +233,7 @@ final message = localized?.localizedMessage ?? tr(LocaleKeys.common_errors_uncau
 - **Toasts**: user-initiated action failures, retryable via same UI element
 - **Dialogs**: errors requiring acknowledgment or additional context
 
-## Crashlytics
+## Crash Reporting
 
 ```dart
 extension ExceptionConvenience on Object {
@@ -245,6 +245,8 @@ if (error.shouldReportToCrashlytics) {
   crashlytics.recordError(error, stackTrace);
 }
 ```
+
+The same gate applies with Sentry, in `beforeSend` or in the provider failure observer (see `app_bootstrap.md`). Reporting happens in one place: the observer and the log listener (see `logging.md`), never in providers or widgets.
 
 ## Localization Keys
 
@@ -268,12 +270,3 @@ if (error.shouldReportToCrashlytics) {
   }
 }
 ```
-
-## Key Principles
-
-- Unique messages per exception type → debugging from user screenshots without logs
-- `ParsingException` captures context (endpoint, expected type, raw JSON) for remote debugging
-- `ResultError` = frontend bugs (assertions that failed at runtime)
-- `DomainException` = expected business states needing dedicated UI flows
-- Response parsing extensions keep API code lean while handling errors gracefully
-- List parsing continues on individual item failures, logs errors, returns valid items

@@ -2,6 +2,12 @@
 
 Session state from a third-party auth SDK: auth state, domain user, sign-out and token expiry, access-token cache, selected account. The concrete SDK is Clerk (`ClerkAuthState` is the listenable SDK object, `SessionToken` the cached JWT); below it is called `AuthSdk`.
 
+## Layout
+
+- `lib/auth/provider/`: `auth_sdk_provider.dart`, `auth_state.dart`, `auth_provider.dart`, `user_provider.dart`, `token_expiration_provider.dart`
+- `lib/auth/domain/`: `auth_cache.dart`, `user_api.dart`, `user_entity.dart`
+- `lib/account/provider/selected_account_provider.dart` when the product has accounts
+
 ## Auth State
 
 ```dart
@@ -135,16 +141,16 @@ class SelectedAccount extends _$SelectedAccount {
 - A stale stored id (account removed, access revoked) silently falls back; no error state. Account-scoped providers `await ref.watch(selectedAccountProvider.future)` in `build`, so switching accounts reloads them.
 
 ## Variant: REST Token Auth
-For a backend issuing its own access and refresh tokens (forgeblast):
+
+For a backend issuing its own access and refresh tokens:
+
 - Tokens live in `FlutterSecureStorage` under keys centralised in a `StorageKeys` class.
 - `Auth.build()` reads the access token, verifies it with the backend and returns the user; any failure deletes both tokens and returns an unauthenticated `AuthState`. Login and register write both tokens inside `AsyncValue.guard`.
-- A Dio `QueuedInterceptorsWrapper` attaches the bearer token, refreshes once on 401 through a separate interceptor-free Dio, marks the retry with a header, and clears tokens when refresh fails.
-- forgeblast's interceptor clears tokens without touching auth state, so auth state stays authenticated until restart. Keep the convention above instead: route the failure into `signOut()` so the token-expiry event returns the app to splash.
+- A Dio `QueuedInterceptorsWrapper` attaches the bearer token, refreshes once on 401 through a separate interceptor-free Dio, marks the retry with a header, and clears tokens when refresh fails (see `rest_api.md`).
+- Wire the interceptor's clear-tokens callback to `signOut()` so the token-expiry event returns the app to splash; an interceptor that only deletes tokens leaves auth state authenticated until restart.
 
 ## Anti-Patterns (flag these)
 
 - Storing login state in a field or storage key instead of deriving it from the SDK
 - Navigating to the auth screen from `signOut()` or an interceptor
 - Fetching the domain user without gating on `auth.userId`
-
-Sources: merchant-app `lib/auth/provider/auth_state.dart`, `lib/auth/provider/auth_provider.dart`, `lib/auth/provider/user_provider.dart`, `lib/auth/provider/token_expiration_provider.dart`, `lib/auth/provider/clerk_auth_provider.dart`, `lib/auth/domain/auth_cache.dart`, `lib/common/data/backend_client_provider.dart`, `lib/account/provider/selected_account_provider.dart`; forgeblast_app `lib/auth/providers/auth_provider.dart`, `lib/common/storage/secure_storage_provider.dart`, `lib/common/network/auth_interceptor.dart`

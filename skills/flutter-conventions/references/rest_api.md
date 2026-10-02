@@ -4,7 +4,7 @@ Dio client, interceptors, API classes, mocks, response parsing and JSON entities
 
 ## Layout
 
-- `lib/common/network/`: `dio_provider.dart`, `auth_interceptor.dart`, `locale_interceptor.dart`, `error_interceptor.dart`, `response_parsing.dart`, `exception.dart`, `api_endpoint.dart`
+- `lib/common/network/`: `dio_provider.dart`, `auth_interceptor.dart`, `locale_interceptor.dart`, `logging_dio_interceptor.dart`, `error_interceptor.dart`, `response_parsing.dart`, `exception.dart`, `api_endpoint.dart`
 - `lib/<feature>/domain/`: `item_api.dart` (abstract + impl + provider), `item_entity.dart`, `item_responses.dart`, `item_requests.dart`, `mock/item_mock_api.dart`; exception types are in `error_handling.md`
 
 ## Dio Provider
@@ -42,7 +42,7 @@ Interceptor order is a requirement:
 
 1. `LocaleInterceptor`: sets `Accept-Language` from an injected `Future<String> Function() getCurrentLocale`; a failed locale read skips the header
 2. `AuthInterceptor`: bearer token and 401 recovery
-3. `LoggingDioInterceptor`: request/response/error, bodies off
+3. `LoggingDioInterceptor`: the project's logging `Interceptor` (see `logging.md`); request/response/error, bodies off
 4. `ApiErrorInterceptor` last: its `handler.reject` ends the error chain, so refresh and logging must already have run
 
 - Several base URLs get one keepAlive provider each (`dio`, `dioV2`), built by a shared private `_createDio(ref, baseUrl:)`
@@ -246,5 +246,3 @@ Future<CustomerEntity> createCustomer(CreateCustomerDto dto, {required AccountEn
 - Strict casts on fields the backend sends loosely instead of the `json_parse_helpers` converters
 - Mock selection keyed on `kDebugMode` alone, reachable in release
 - Proto messages returned from an API class or held in provider state
-
-Sources: forgeblast_app `lib/common/network/{dio_provider,auth_interceptor,locale_interceptor,error_interceptor,response_parsing,exception,api_endpoint}.dart`, `lib/auth/domain/auth_api.dart`, `lib/auth/domain/mock/auth_mock_api.dart`, `lib/common/mock/mock_data_helper.dart`, `lib/flavor_config.dart`, `lib/common/extensions/json_parse_helpers.dart`, `lib/squad/domain/{squad_responses,squads_api}.dart`, `lib/arena/domain/squad_leaderboard_entry.dart`, `lib/notifications/domain/notification_entity.dart`, `lib/games/domain/games_response.dart`; merchant-app `lib/customer/domain/{customer_api,customer_entity}.dart`

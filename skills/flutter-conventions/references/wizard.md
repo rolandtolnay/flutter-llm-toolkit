@@ -2,6 +2,11 @@
 
 One screen hosts every step: a sealed step type, the visible step in local `useState`, all form data in one builder notifier, and step widgets that read/write the builder and get `onNext`/`onSave` callbacks instead of pushing routes.
 
+## Layout
+
+- `lib/<flow>/`: `<flow>_screen.dart` (host), `<flow>_content.dart` (shell), `<flow>_step.dart` (sealed step type), one `step_<name>/` folder per step holding its widget and step-local providers
+- `lib/<flow>/provider/`: `<flow>_builder_state.dart`, `<flow>_builder_provider.dart`, `<flow>_draft_provider.dart`, `<flow>_converter_provider.dart`, `<flow>_scroll_provider.dart`
+
 ## Step Type
 
 ```dart
@@ -74,7 +79,7 @@ return AppScaffold(
   leading: step.value.index > 0
       ? AppBackButton(onPressed: () => goTo(MatchStep.fromIndex(step.value.index - 1), back: true))
       : null,
-  body: PageTransitionSwitcher(
+  body: PageTransitionSwitcher( // package:animations, with SharedAxisTransition
     reverse: reverse.value,
     transitionBuilder: (child, animation, secondary) => SharedAxisTransition(
       animation: animation, secondaryAnimation: secondary, child: child,
@@ -137,7 +142,7 @@ class MatchDraft extends _$MatchDraft {
 
 ## Lighter Variant
 
-Short one-off flows (merchant-app account onboarding) keep the sealed step with `stepCount`, `useState` step and reverse flag, `PageTransitionSwitcher`, a builder notifier and a converter provider, but drop drafts, the persisted step index and the content shell.
+Short one-off flows (an account onboarding, for example) keep the sealed step with `stepCount`, `useState` step and reverse flag, `PageTransitionSwitcher`, a builder notifier and a converter provider, but drop drafts, the persisted step index and the content shell.
 
 ## Anti-Patterns (flag these)
 
@@ -145,5 +150,3 @@ Short one-off flows (merchant-app account onboarding) keep the sealed step with 
 - One provider per step, or cross-field cleanup done in widgets instead of builder methods
 - Autosaving edit mode or empty state, or writing drafts without debounce and expiry
 - Leaving the draft behind after a successful save or explicit discard
-
-Sources: boardbit `lib/log_play/log_play_screen.dart`, `lib/log_play/log_play_content.dart`, `lib/log_play/provider/{log_play_builder_state,log_play_builder_provider,log_play_partial_provider,play_builder_converter_provider}.dart`, `lib/log_play/step_players/log_play_players_widget.dart`, `lib/log_play/step_score/provider/log_play_scroll_provider.dart`; forgeblast_app `lib/onboarding/{onboarding_screen,onboarding_provider}.dart`; merchant-app `lib/onboarding/{onboarding_account_screen,account_builder_steps}.dart`, `lib/onboarding/provider/{account_builder_provider,account_builder_converter}.dart`

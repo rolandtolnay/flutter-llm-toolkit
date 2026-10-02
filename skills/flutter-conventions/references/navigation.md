@@ -2,6 +2,11 @@
 
 auto_route setup: router config and provider, startup gating, tabs, typed params and results, where navigation calls live.
 
+## Layout
+
+- `lib/root/`: `app_router.dart` (config class plus provider; `app_router.gr.dart` is generated beside it), `root_screen.dart` (tab shell), `app_bottom_nav_bar.dart`, `application.dart` (the `MaterialApp.router` widget)
+- Screens are `@RoutePage()` classes at their feature root
+
 ## Router
 
 ```dart
@@ -45,7 +50,7 @@ class AppRouter extends RootStackRouter {
 
 ```dart
 final router = ref.watch(appRouterProvider);
-return ShadApp.router( // or MaterialApp.router
+return MaterialApp.router(
   routerConfig: router.config(
     navigatorObservers: () => [SentryNavigatorObserver(), PosthogObserver()],
   ),
@@ -109,5 +114,3 @@ Navigate in user-action callbacks, `ref.listen` callbacks (e.g. on a mutation re
 - `AutoRouteGuard` for login/onboarding checks: belongs in `StartupDestination`
 - Pushing the splash or auth route on sign-out instead of emitting the token-expiry event
 - Passing an entity through `@PathParam`, or an id-only detail route without a path segment when it must deep-link
-
-Sources: merchant-app `lib/root/app_router.dart`, `lib/root/root_screen.dart`, `lib/root/app_bottom_nav_bar.dart`, `lib/root/application.dart`, `lib/root/splash_screen.dart`, `lib/startup/startup_destination_provider.dart`, `lib/auth/auth_screen.dart`, `lib/customer/widgets/create_customer_screen.dart`, `lib/customer/customer_screen.dart`, `lib/payment_intent/payment_detail_screen.dart`, `lib/refund/refund_review_screen.dart`; forgeblast_app `lib/common/router/app_router.dart`, `lib/application.dart`, `lib/auth/splash_screen.dart`, `lib/profile/profile_screen.dart`

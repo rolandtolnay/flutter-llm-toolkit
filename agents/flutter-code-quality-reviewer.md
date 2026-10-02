@@ -14,7 +14,7 @@ A list of `.dart` file paths, usually the files changed by a task. If the list i
 
 ## Checklist
 
-Read the checklist at `{{SKILLS_DIR}}/flutter-code-quality/references/checklist.md` once, then read each file in full. Every rule in the checklist is a lint; the closing "Anti-Patterns" section is the scanning list. A finding needs a specific line and a concrete fix drawn from the checklist.
+Find `flutter-code-quality/references/checklist.md` under the skills directory the toolkit was installed to (the project's `.agents/skills/` by default, otherwise the harness's user-level skills root) and read it once; if it is not there, report that and stop. Then read each file in full. Every rule in the checklist is a lint; the closing "Anti-Patterns" section is the scanning list. A finding needs a specific line and a concrete fix drawn from the checklist.
 
 Report only rule violations. Style preferences not in the checklist, naming quibbles, formatting, and anything `dart analyze` already catches are out of scope. When a rule depends on project helpers (`.divide()`, `listenOnError`, `context.color`, `useInit`), confirm with a quick search that the project has them before flagging their absence; if the project lacks the helper, skip the rule.
 

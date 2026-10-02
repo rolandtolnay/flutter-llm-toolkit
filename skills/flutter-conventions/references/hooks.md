@@ -45,6 +45,8 @@
 
 ## Project Helper Hooks
 
+Not part of flutter_hooks: these four live in `lib/common/util/use_init_hook.dart` and their definitions are in `common_kit.md`. Every reference and the quality checklist assume they exist, so add the file to a new app before writing widgets.
+
 ### `useInit` — sync run-once
 
 ```dart
@@ -86,7 +88,7 @@ useAsyncEffectDisposing(() async {
 
 - Local state: `useState`, `useRef`, `useValueNotifier`
 - Owned resources: `useTextEditingController`, `useFocusNode`, `useScrollController`, `usePageController`, `useAnimationController`
-- Lifecycle: `useEffect`, `useInit`, `useInitAsync`
+- Lifecycle: `useEffect`; project hooks `useInit`, `useInitAsync`, `useAsyncEffect` (above)
 - Rebuild on changes: `useListenable`, `useValueListenable`
 - Stable instances: `useMemoized`
 
@@ -96,9 +98,9 @@ useAsyncEffectDisposing(() async {
 class Example extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final saving = ref.watch(saveProvider).isLoading;
     final formKey = useMemoized(GlobalKey<FormState>.new);
     final nameController = useTextEditingController();
-    final submitting = useState(false);
 
     useListenable(nameController);
 
@@ -107,14 +109,10 @@ class Example extends HookConsumerWidget {
       nameController.text = initial.name ?? '';
     });
 
-    Future<void> submit() async {
-      submitting.value = true;
-      try {
-        await ref.read(saveProvider.notifier).save(name: nameController.text.trim());
-      } finally {
-        submitting.value = false;
-      }
-    }
+    ref.listenOnError(saveProvider);
+
+    Future<void> submit() =>
+        ref.read(saveProvider.notifier).save(name: nameController.text.trim());
 
     return Form(
       key: formKey,
@@ -122,7 +120,7 @@ class Example extends HookConsumerWidget {
         children: [
           TextFormField(controller: nameController),
           ElevatedButton(
-            onPressed: submitting.value ? null : submit,
+            onPressed: saving ? null : submit,
             child: const Text('Save'),
           ),
         ],
@@ -147,7 +145,7 @@ useEffect(() {
 }, [customer]);
 ```
 
-- Centralized error handling: `ref.listenOnError(provider)` or fallback:
+- Centralized error handling: `ref.listenOnError(provider)` (a `WidgetRef` extension from `common_kit.md`) or fallback:
 
 ```dart
 ref.listen(createPaymentProvider, (prev, next) {
@@ -157,7 +155,7 @@ ref.listen(createPaymentProvider, (prev, next) {
 });
 ```
 
-- Condition-based actions: `ref.listenForCondition(provider, condition, action)` or fallback:
+- Condition-based actions: `ref.listenForCondition(provider, condition, action)` (same extension file) or fallback:
 
 ```dart
 ref.listen(createCustomerProvider, (prev, next) {
