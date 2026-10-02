@@ -10,11 +10,12 @@ Seven years of Flutter decisions, distilled into files a coding agent can load. 
 - **`flutter-code-quality`** runs after implementation as an expensive linter. A read-only subagent (`flutter-code-quality-reviewer`) checks the changed files against `references/checklist.md`, a list of rules a static analyzer cannot express, and returns terse `file:line` findings that the implementing agent then applies.
 - **`flutter-capture-pattern`** writes a convention proven in project code back into this repository, so the knowledge base grows from real apps.
 
-The references assume Riverpod with code generation and flutter_hooks. They were extracted from three production apps with gRPC, REST and Firebase backends; the layering is the same for all three.
+The references assume Riverpod with code generation and flutter_hooks, and use the same layering whether the backend is gRPC, REST or Firebase.
 
 ## Install
 
-Resources install as **copies into the project** (`.agents/skills/`, with `.claude/skills/` symlinks for Claude Code, and the reviewer agent in `.claude/agents/` and `.pi/agents/`). Copies are committed, so teammates and CI see the same files and nothing points at a personal checkout. The reviewer agent's frontmatter pins a model per harness (Opus in Claude Code, GPT-6.1 Sol in Pi); tell the installing agent if your setup should use something else. Paste the prompt below into a fresh session of the coding agent, inside the Flutter project.
+> [!TIP]
+> Expand the prompt and paste it into a fresh session of your coding agent, opened inside the Flutter project.
 
 <details>
 <summary><strong>Install prompt: click to expand</strong></summary>
@@ -57,6 +58,8 @@ Add the `## Flutter skills` section from `templates/agents-md-flutter.md` to the
 ```
 
 </details>
+
+Resources install as **copies into the project** (`.agents/skills/`, with `.claude/skills/` symlinks for Claude Code, and the reviewer agent in `.claude/agents/` and `.pi/agents/`). Copies are committed, so teammates and CI see the same files and nothing points at a personal checkout. The reviewer agent's frontmatter pins a model per harness (Opus in Claude Code, GPT-6.1 Sol in Pi); tell the installing agent if your setup should use something else.
 
 ## Update
 
