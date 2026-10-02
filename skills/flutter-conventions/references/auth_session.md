@@ -74,6 +74,8 @@ Future<void> signOut() async {
 
 ## Access-Token Cache
 
+An app-level cache in front of the SDK's token call. It exists to join concurrent fetches into one, retry failed fetches and check expiry; when the SDK already does all three, skip it and call the SDK directly, treating a missing token as sign-out.
+
 ```dart
 class AuthCache {
   AuthCache({required AuthSdk sdk}) : _sdk = sdk;
@@ -100,8 +102,7 @@ class AuthCache {
     if (pending != null) return pending.future;
     final completer = _completer = Completer<void>();
     try {
-      final token = await _sdk.sessionToken();
-      if (identical(_completer, completer)) _cached = token; // cache cleared mid-fetch: drop it
+      _cached = await _sdk.sessionToken();
     } catch (e, st) {
       log.debug('Failed fetching session token', e, st);
     } finally {
@@ -116,6 +117,7 @@ AuthCache authCache(Ref ref) => AuthCache(sdk: ref.read(authSdkProvider).require
 ```
 
 - The request interceptor takes `fetchAccessToken: () => ref.read(authCacheProvider).accessToken()` and `onShouldLogout: () => ref.read(authProvider.notifier).signOut()`. `requireValue` is safe because app startup awaits SDK creation before any authenticated request.
+- Sign-out ends every token request that started before it. The SDK's own sign-out does not guarantee this: a fetch already in flight still resolves with the old user's token, and a failed network sign-out leaves the SDK able to issue it again. So after every await, the cache checks that it is still in the session it started in before it stores or returns a token, and returns null otherwise. The mechanism is the app's choice; a session counter incremented by `clearAccessToken()` is the smallest. The same rule applies to a REST refresh interceptor that writes tokens to storage after an await (`rest_api.md`).
 
 ## Selected Account
 
@@ -158,3 +160,4 @@ For a backend issuing its own access and refresh tokens:
 - Storing login state in a field or storage key instead of deriving it from the SDK
 - Navigating to the auth screen from `signOut()` or an interceptor
 - Fetching the domain user without gating on `auth.userId`
+- Storing or returning a credential after an await without checking that sign-out has not run meanwhile
