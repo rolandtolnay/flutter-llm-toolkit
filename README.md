@@ -41,7 +41,7 @@ Repository: https://github.com/rolandtolnay/flutter-llm-toolkit.git
 ## Layout
 
 - Skills: copy each `skills/<name>/` directory whole into `.agents/skills/<name>/` (Pi and Codex read this location). For Claude Code, create relative symlinks `.claude/skills/<name> -> ../../.agents/skills/<name>`.
-- Reviewer agent: copy `agents/flutter-code-quality-reviewer.md` to `.claude/agents/flutter-code-quality-reviewer.md` and `agents/flutter-code-quality-reviewer.pi.md` to `.pi/agents/flutter-code-quality-reviewer.md`. Keep the bodies identical; only the frontmatter differs between the two.
+- Reviewer agent: copy `agents/flutter-code-quality-reviewer.md` to `.claude/agents/flutter-code-quality-reviewer.md` and `agents/flutter-code-quality-reviewer.pi.md` to `.pi/agents/flutter-code-quality-reviewer.md`. Keep the bodies identical; only the frontmatter differs between the two. In both, replace the sentence that tells the reviewer to find the checklist with the checklist's exact installed path (`.agents/skills/flutter-code-quality/references/checklist.md` for a project install), so it reads the file directly.
 - On a different OS or harness layout, keep the intent (one canonical copy, the others link to it) and tell me what you changed.
 
 ## Project instructions
@@ -63,7 +63,7 @@ Add the `## Flutter skills` section from `templates/agents-md-flutter.md` to the
 Installed copies do not follow the repository. To refresh them:
 
 ```text
-Update my flutter-llm-toolkit installation in this project. Use the local checkout if I give one, otherwise fetch https://github.com/rolandtolnay/flutter-llm-toolkit.git into ~/toolkits/flutter-llm-toolkit. For each installed skill under .agents/skills and each reviewer agent under .claude/agents and .pi/agents, diff the installed copy against the new source and show me files with local edits before overwriting them. Keep the .claude/skills symlinks. Verify the agent bodies still match. Report what changed.
+Update my flutter-llm-toolkit installation in this project. Use the local checkout if I give one, otherwise fetch https://github.com/rolandtolnay/flutter-llm-toolkit.git into ~/toolkits/flutter-llm-toolkit. For each installed skill under .agents/skills and each reviewer agent under .claude/agents and .pi/agents, diff the installed copy against the new source (after pinning the checklist path the same way the install did) and show me files with local edits before overwriting them. Keep the .claude/skills symlinks. Verify the agent bodies still match. Report what changed.
 ```
 
 ## Uninstall
