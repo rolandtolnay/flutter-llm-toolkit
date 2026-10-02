@@ -100,7 +100,8 @@ class AuthCache {
     if (pending != null) return pending.future;
     final completer = _completer = Completer<void>();
     try {
-      _cached = await _sdk.sessionToken();
+      final token = await _sdk.sessionToken();
+      if (identical(_completer, completer)) _cached = token; // cache cleared mid-fetch: drop it
     } catch (e, st) {
       log.debug('Failed fetching session token', e, st);
     } finally {
