@@ -116,7 +116,7 @@ The unmount teardown runs before the container's dispose teardown, so widgets ne
 Build entities through the production conversion so tests exercise the same mapping as the app, and give every parameter a valid default:
 
 ```dart
-AccountEntity testAccount({String id = 'accounts/test', String name = 'Merchant', AccountState state = AccountState.active}) =>
+AccountEntity testAccount({String id = 'accounts/test', String name = 'Test account', AccountState state = AccountState.active}) =>
     proto.Account(name: id, displayName: name, state: state.toProto()).toEntity();
 
 ItemEntity testItem({String id = 'items/1', int amountMinor = 1000}) =>
@@ -127,7 +127,7 @@ Parameters exist only for what tests vary. A feature's `fixtures.dart` holds bui
 
 ```dart
 /// An otherwise eligible rail isolates rejection of the unsupported type.
-final bacs = proto.PaymentMethod(name: 'methods/bacs', paymentRail: 'rails/gbp', bacsDd: proto.PaymentMethod_BacsDd()).toEntity()!;
+final directDebit = proto.PaymentMethod(name: 'methods/1', rail: 'rails/gbp', directDebit: proto.DirectDebit()).toEntity()!;
 ```
 
 ## Doubles
@@ -190,7 +190,7 @@ Boundary adapters for the transports and platforms the app uses:
 - REST: a `Dio` mock stubbed per method, or a `MockAdapter` returning JSON fixtures.
 - Platform channel: `TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, handler)`, reset in `tearDown`; native-to-Dart calls are delivered with `handlePlatformMessage` through a `deliverNativeCall(method, arguments)` helper.
 - Storage: in-memory implementations of secure storage and preferences behind `AppStorage memoryStorage()`.
-- WebView: a `FakeWebViewPlatform` that records loaded URIs and exposes `completeTokenization(token)` or the equivalent scenario driver.
+- WebView: a `FakeWebViewPlatform` that records loaded URIs and exposes a scenario driver such as `completeCheckout(result)` for what the page would send back.
 
 ## App Harness
 

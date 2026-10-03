@@ -28,7 +28,7 @@ test('lost processing result stays unknown and status check cannot purchase agai
 });
 ```
 
-`processedSecrets` and `creationRequests` are asserted because a second charge or a second intent costs the merchant money. `sdk.initializeCalls` would not be: initialisation count is implementation detail.
+`processedSecrets` and `creationRequests` are asserted because a second charge or a second intent costs real money. `sdk.initializeCalls` would not be: initialisation count is implementation detail.
 
 ## Transition Tables
 
