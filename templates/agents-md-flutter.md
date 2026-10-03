@@ -9,7 +9,7 @@ Paste after installing the skills:
 ```markdown
 ## Flutter skills
 
-Load `flutter-conventions` before implementing or changing Flutter code; it holds the architecture, widget and Riverpod conventions and routes to deeper references per task. Before reporting a Flutter change as done, run the `flutter-code-quality` check on the changed files and apply its findings.
+Load `flutter-conventions` before implementing or changing Flutter code; it holds the architecture, widget and Riverpod conventions and routes to deeper references per task. Load `flutter-testing` when writing or changing tests. Before reporting a Flutter change as done, run the `flutter-code-quality` check on the changed files and apply its findings.
 ```
 
 ## Sections most Flutter projects need
@@ -24,6 +24,7 @@ Each is a few lines. State the fact and the reason; leave out steps the agent ca
 - **Scope rules.** What is best effort (small screens, large text, dormant brands) and what is not, so a failing edge case does not pull the agent into out-of-scope fixes.
 - **Things that look wrong but are not.** Dormant code kept on purpose, lint rules disabled for a reason, legacy modules not worth migrating.
 - **Boundaries.** What the agent may do without asking (edit in-scope code, run codegen, analyze and tests) and what needs confirmation (dependency or lint changes, regenerating protos, anything touching release configuration). State it once.
+- **Test facts.** The sandbox account an agent signs in with for live checks, and anything about the suite the skill cannot know: a support library living somewhere other than `test/support/`, flows that must stay covered by a routed journey.
 - **Project skills.** One line per project-specific skill and when to load it.
 
 ## What earns a line

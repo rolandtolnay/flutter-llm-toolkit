@@ -9,7 +9,7 @@ An expensive linter: `references/checklist.md` holds rules a static analyzer can
 
 ## Scope
 
-The files changed by the current task: `git diff --name-only` plus untracked `.dart` files, or the files the user names. Skip generated files (`*.g.dart`, `*.gr.dart`, `*.freezed.dart`, `lib/generated/`) and tests.
+The files changed by the current task: `git diff --name-only` plus untracked `.dart` files, or the files the user names. Skip generated files (`*.g.dart`, `*.gr.dart`, `*.freezed.dart`, `lib/generated/`).
 
 ## Running the check
 

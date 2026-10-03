@@ -4,10 +4,11 @@
 
 ## What this is
 
-Seven years of Flutter decisions, distilled into files a coding agent can load. Two skills do the work, a third keeps them growing:
+Seven years of Flutter decisions, distilled into files a coding agent can load. Three skills do the work, a fourth keeps them growing:
 
 - **`flutter-conventions`** is loaded before implementing or changing Flutter code. Its `SKILL.md` carries the rules that apply to every change (layering, folder placement, widget build structure, action providers, async UX, modern Dart) and routes to about twenty reference files for specific tasks: Riverpod, navigation, auth session, app bootstrap, startup gate, forms, lists and pagination, filters, sheets and dialogs, multi-step wizards, storage, theme, localization, logging, error handling, REST and gRPC API layers, SDK session wrappers, the shared extension kit, and design principles for state and widget APIs.
 - **`flutter-code-quality`** runs after implementation as an expensive linter. A read-only subagent (`flutter-code-quality-reviewer`) checks the changed files against `references/checklist.md`, a list of rules a static analyzer cannot express, and returns terse `file:line` findings that the implementing agent then applies.
+- **`flutter-testing`** is loaded when writing or changing tests. Its `SKILL.md` decides what deserves a test (one case per production condition, at the layer that owns the rule) and how to write it lean; its references hold the shared `test/support/` library shape, provider and widget test patterns, and how an agent drives the running app for a one-off check.
 - **`flutter-capture-pattern`** writes a convention proven in project code back into this repository, so the knowledge base grows from real apps.
 
 The references assume Riverpod with code generation and flutter_hooks, and use the same layering whether the backend is gRPC, REST or Firebase.
@@ -27,7 +28,7 @@ Repository: https://github.com/rolandtolnay/flutter-llm-toolkit.git
 
 ## Done when
 
-- `flutter-conventions`, `flutter-code-quality` and (if I chose it) `flutter-capture-pattern` are discoverable by those names in every harness I use, from one set of files.
+- `flutter-conventions`, `flutter-code-quality`, `flutter-testing` and (if I chose it) `flutter-capture-pattern` are discoverable by those names in every harness I use, from one set of files.
 - The `flutter-code-quality-reviewer` subagent is discoverable in Claude Code and Pi with the model pins from its frontmatter.
 - Every relative reference inside the installed skills resolves.
 - The project `AGENTS.md` has the `## Flutter skills` section from `templates/agents-md-flutter.md` and no duplicated generic Flutter guidance.
@@ -37,7 +38,7 @@ Repository: https://github.com/rolandtolnay/flutter-llm-toolkit.git
 1. Source: use a local checkout if I give you one; otherwise clone to `~/toolkits/flutter-llm-toolkit`.
 2. Harnesses: Claude Code, Pi, Codex, or a subset. Ask once if I have not said.
 3. Scope: project install is the default. A user-level install (`~/.agents/skills`, `~/.claude/skills`, `~/.pi/agent/skills`) is only for when I say so.
-4. Which skills: recommend all three; `flutter-capture-pattern` is optional for projects that never contribute patterns back.
+4. Which skills: recommend all four; `flutter-capture-pattern` is optional for projects that never contribute patterns back.
 
 ## Layout
 
@@ -72,12 +73,12 @@ Update my flutter-llm-toolkit installation in this project. Use the local checko
 ## Uninstall
 
 ```text
-Remove flutter-llm-toolkit from this project: the .agents/skills directories flutter-conventions, flutter-code-quality and flutter-capture-pattern, the matching .claude/skills symlinks (unlink the symlink entries, never their targets), .claude/agents/flutter-code-quality-reviewer.md, .pi/agents/flutter-code-quality-reviewer.md, and the Flutter skills section in AGENTS.md. Show me the removal list before deleting, skip anything with local edits unless I confirm, and leave everything else untouched.
+Remove flutter-llm-toolkit from this project: the .agents/skills directories flutter-conventions, flutter-code-quality, flutter-testing and flutter-capture-pattern, the matching .claude/skills symlinks (unlink the symlink entries, never their targets), .claude/agents/flutter-code-quality-reviewer.md, .pi/agents/flutter-code-quality-reviewer.md, and the Flutter skills section in AGENTS.md. Show me the removal list before deleting, skip anything with local edits unless I confirm, and leave everything else untouched.
 ```
 
 ## How it is used
 
-Once installed, nothing needs invoking by hand. The agent loads `flutter-conventions` when it starts Flutter work because the project `AGENTS.md` tells it to, reads the references the task needs, and runs the `flutter-code-quality` check before reporting the change done. You can also ask directly:
+Once installed, nothing needs invoking by hand. The agent loads `flutter-conventions` when it starts Flutter work because the project `AGENTS.md` tells it to, reads the references the task needs, loads `flutter-testing` when the task adds or changes tests, and runs the `flutter-code-quality` check before reporting the change done. You can also ask directly:
 
 ```
 Check lib/account/ against the code quality checklist

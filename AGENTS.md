@@ -1,6 +1,6 @@
 # flutter-llm-toolkit
 
-Skills and a reviewer subagent that teach coding agents how one experienced Flutter developer builds apps with Riverpod, flutter_hooks and auto_route. Installed by pasting the README prompt into the target agent; there is no installer script.
+Skills and a reviewer subagent that teach coding agents how one experienced Flutter developer builds and tests apps with Riverpod, flutter_hooks and auto_route. Installed by pasting the README prompt into the target agent; there is no installer script.
 
 ## Layout
 
@@ -9,6 +9,7 @@ Skills and a reviewer subagent that teach coding agents how one experienced Flut
 | `skills/flutter-conventions/` | Loaded before implementing Flutter code. `SKILL.md` is the always-needed rules plus a routing table; `references/` holds one file per topic. |
 | `skills/flutter-code-quality/` | The expensive-linter workflow. `references/checklist.md` is the rule list the reviewer applies. |
 | `skills/flutter-capture-pattern/` | Writes new knowledge back into this repo from project code. |
+| `skills/flutter-testing/` | Loaded when writing or changing tests. `SKILL.md` decides what deserves a test and at which layer; `references/` hold the shared support library, provider and widget test shapes, and live verification of the running app. |
 | `agents/flutter-code-quality-reviewer.md` | Read-only reviewer for Claude Code (`model: opus`, `effort: high`). |
 | `agents/flutter-code-quality-reviewer.pi.md` | Same body with Pi frontmatter (`openai-codex/gpt-6.1-sol`, `thinking: high`). |
 | `templates/agents-md-flutter.md` | The `AGENTS.md` section the install prompt pastes into a project, plus what else a Flutter project's `AGENTS.md` should carry. |
@@ -26,7 +27,7 @@ The reader is a frontier coding model that knows Flutter and Riverpod. Document 
 - Code is Riverpod 3 codegen syntax, generic names (`Item`, `Order`), real signatures for shared helpers, trimmed to the shape.
 - `checklist.md` is the exception: it is a lint list, so it names specific bad and good forms, grouped by section, with the anti-pattern list at the end as the reviewer's scanning list.
 - Skill descriptions stay one or two sentences stating when to load the skill, nothing more.
-- Testing guidance is out of scope for this toolkit.
+- Testing guidance lives in `flutter-testing`; `flutter-conventions` references and the checklist's non-test sections do not repeat it.
 
 ## Sources
 

@@ -129,6 +129,21 @@ Opinionated rules for Flutter code in this family of apps. Each rule is a lint t
 - Translation placeholders for dynamic values: `"{multiplier}x Premium Bonus!"`
 - Remove unused keys when logic centralizes
 
+## Tests
+
+- One case per production branch: `for (final (input, expected) in rows) test(...)` not a case per enum value or per equivalent input
+- Literal expectations: `(SdkError.setupRequired, isA<SetupRequired>())` not `invalid ? isNull : isA<Ready>()`
+- The layer that owns the rule: entity getter in `test()`, state machine over `ProviderContainer`, render state in a scoped `testWidgets`; never the same rule at two layers
+- Fakes at the boundary: `extends Fake implements ItemApi` recording calls, not `Mock implements AccountEntity` / `FlavorConfig` / `AuthState`
+- Per-test control through fields: `api.failWith = GrpcError.unavailable()` not input values the fake recognises
+- Ordering via `Completer`, time via `fakeAsync` or `tester.pump(duration)`: no `Future.delayed`, no polling loops
+- `await expectLater(future, throwsA(...))` not an unawaited `expect(future, throwsA(...))`
+- Call counts only for money, credentials or external side effects: `expect(sdk.processedSecrets, ['secret-1'])` not `expect(sdk.initializeCalls, 2)`
+- Finders by key, semantics label or subject type; copy `findsNothing` only beside a positive check on the same screen
+- `TargetPlatformVariant` only when the code under test reads `defaultTargetPlatform`
+- Shared setup imported from `test/support/`: `createContainer()`, `pumpApp()`, `testAccount()` not per-file copies
+- Behaviour names: `'retry cannot route past a mandatory update'` not `'should clean up completer on error'`
+
 ## Anti-Patterns (flag these)
 
 - `useState<bool>` for loading states (use provider state)
@@ -148,3 +163,7 @@ Opinionated rules for Flutter code in this family of apps. Each rule is a lint t
 - `StatefulWidget` for animation-only state (use `HookWidget` + `useAnimationController`)
 - Manual `operator ==` / `hashCode` overrides (use `Equatable` with `props`)
 - `extensions/` subdirectory for display logic (co-locate with model or widget instead)
+- `expect(tester.takeException(), isNull)` or `pumpWidget(const SizedBox.shrink())` closing a test
+- A fake branching on magic inputs (`if (email == 'offline@example.com')`) or reimplementing backend filtering
+- A test asserting the value its own override or fixture set
+- Assertions restating a wire map, proto field copy or timeout literal
