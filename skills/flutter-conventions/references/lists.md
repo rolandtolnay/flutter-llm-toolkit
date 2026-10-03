@@ -4,7 +4,7 @@ Async list screens with Riverpod: cursor pagination, grouped infinite lists, loa
 
 ## Overview
 
-1. **Result Model**: `List<T> items`, `String? nextPageToken`, `bool hasReachedMax`
+1. **Result Model**: `List<T> items`, `String? nextPageToken`, `bool get hasReachedMax => nextPageToken == null`
 2. **List Provider**: `@Riverpod(keepAlive: true)`, `build()` for initial fetch, `loadMore()` for pagination
 3. **`loadMore()`**: guard against loading/max, `.retainPrevious()`, combine items with spread
 4. **Widget**: pass `isLoading`, `hasError`, `hasReachedMax` to `InfiniteList`, call `notifier.loadMore()` in `onFetchData`
@@ -23,29 +23,28 @@ Async list screens with Riverpod: cursor pagination, grouped infinite lists, loa
 class ItemListResult extends Equatable {
   final List<ItemEntity> items;
   final String? nextPageToken;
-  final bool hasReachedMax;
 
   const ItemListResult({
     this.items = const [],
     this.nextPageToken,
-    this.hasReachedMax = true,
   });
 
   /// Nullable function wrapper: distinguishes "set to null" vs "not provided"
   ItemListResult copyWith({
     List<ItemEntity>? items,
     String? Function()? nextPageToken,
-    bool? hasReachedMax,
   }) {
     return ItemListResult(
       items: items ?? this.items,
       nextPageToken: nextPageToken != null ? nextPageToken() : this.nextPageToken,
-      hasReachedMax: hasReachedMax ?? this.hasReachedMax,
     );
   }
 
+  /// The backend token alone decides completeness.
+  bool get hasReachedMax => nextPageToken == null;
+
   @override
-  List<Object?> get props => [items, nextPageToken, hasReachedMax];
+  List<Object?> get props => [items, nextPageToken];
 }
 ```
 
@@ -70,12 +69,11 @@ Future<ItemListResult> getItemList({
   return ItemListResult(
     items: response.items.map((e) => e.toEntity()).toList(),
     nextPageToken: response.nextPageToken.isEmpty ? null : response.nextPageToken,
-    hasReachedMax: response.nextPageToken.isEmpty,
   );
 }
 ```
 
-- `hasReachedMax`: `response.nextPageToken.isEmpty`; page length does not determine cursor exhaustion
+- `hasReachedMax` derives from the token; page length does not determine cursor exhaustion
 - Empty `nextPageToken` from API → `null`
 
 ## Provider
@@ -121,7 +119,6 @@ class ItemList extends _$ItemList {
       return ItemListResult(
         items: [...?previous?.items, ...result.items],
         nextPageToken: result.nextPageToken,
-        hasReachedMax: result.hasReachedMax,
       );
     });
     if (!ref.mounted || revision != _listRevision) return;
