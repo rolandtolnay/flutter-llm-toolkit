@@ -40,23 +40,23 @@ dart pub global activate marionette_cli
 marionette help-ai   # the full command reference, written for agents
 ```
 
-The CLI is the one way agents drive the app, from any harness, script or shell. Each command connects, runs and disconnects on its own (about 0.2s), so there is no session state to manage and several commands chain in one shell call. The `marionette_mcp` package offers the same operations as an MCP server; it is not used here.
+The CLI is the preferred way agents drive the app, from any harness, script or shell. Each command connects, runs and disconnects on its own (about 0.2s), so there is no session state to manage and several commands chain in one shell call. The `marionette_mcp` package offers the same operations as an MCP server; it is not used here.
 
 ## Session
 
 1. Run the app in debug on the sandbox flavor: `flutter run --flavor sandbox -t lib/main_sandbox.dart --vmservice-out-file=build/vm.txt` (through the project's version manager when it has one). The file holds the `ws://127.0.0.1:<port>/ws` address; `flutter run` also prints it. Sign in with the sandbox test account the project designates for agents.
-2. Name the app once so later commands take `-i`: `marionette register app "$(cat build/vm.txt)"`. Names live in `~/.marionette/instances/`; `--uri <ws-uri>` works instead of `-i` for a one-off command.
-3. `get-interactive-elements` before acting on each new screen. The listing repeats every text style field; pipe it through `grep -oE '^Type: [A-Za-z]+(, (Text|Key): "[^"]*")?'` to keep type, text and key only.
-4. Act by key where possible: `tap --key`, `enter-text --key … --input …` (or `--focused` after tapping a field), `scroll-to`, `swipe`, `press-key`, `press-back-button`.
-5. `take-screenshots --output <path> --no-open` and read the file to confirm what the user would see; `get-logs` to confirm what the app did (the request fired, no exception).
-6. After a code change, `hot-reload` keeps state and `hot-restart` replays from `main()`; then repeat the steps that exercised the change.
-7. `unregister app` when done.
+2. Name the app once so commands targeting it run as `marionette -i app <command>`: `marionette register app "$(cat build/vm.txt)"`. Names live in `~/.marionette/instances/`; `--uri <ws-uri>` works instead of `-i app` for a one-off command.
+3. Run `marionette -i app get-interactive-elements` before acting on each new screen. The listing repeats every text style field; pipe it through `grep -oE '^Type: [A-Za-z]+(, (Text|Key): "[^"]*")?'` to keep type, text and key only.
+4. Act by key where possible: `marionette -i app tap --key <key>`, `marionette -i app enter-text --key <key> --input <text>` (or `--focused` after tapping a field). Other actions include `scroll-to`, `swipe`, `press-key` and `press-back-button`.
+5. Run `marionette -i app take-screenshots --output <path> --no-open` and read the file to confirm what the user would see; `marionette -i app get-logs` to confirm what the app did (the request fired, no exception).
+6. After a code change, `marionette -i app hot-reload` keeps state and `marionette -i app hot-restart` replays from `main()`; then repeat the steps that exercised the change.
+7. Run `marionette unregister app` when done.
 
 Report what was driven and what was observed, screenshot by screenshot, and separately what the persistent tests cover. A live check that fails is a finding to fix, not a reason to skip the test.
 
 ## Limits
 
-- Debug and profile builds only; there is no VM service in release.
+- Debug builds only; the binding is gated on `kDebugMode` and there is no VM service in release.
 - The Flutter element tree only: native permission dialogs, system pickers and platform views are out of reach.
 - Gestures are best-effort; this is not a CI or performance tool.
 - Custom widgets not listed in `isInteractiveWidget` are invisible to element listing and `tap --text`, though `enter-text` by key still finds the `EditableText` beneath them.

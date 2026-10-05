@@ -38,12 +38,14 @@ testWidgets('switching account clears the list before the new account loads', (t
 
   final latePage = Completer<ItemListResult>();
   harness.apis.items.pending = latePage.future;
+  harness.protectedRequests.clear();
   await harness.selectAccount(tester, 'accounts/b');
   expect(find.text(harness.apis.items.first.name), findsNothing);
 
   latePage.complete(ItemListResult(items: [testItem(id: 'accounts/b/items/1', name: 'Item B')]));
   await tester.pumpAndSettle();
   expect(find.text('Item B'), findsOneWidget);
+  expect(harness.protectedRequests, isNotEmpty);
   expect(harness.protectedRequests, everyElement(endsWith(':accounts/b')));
 });
 ```

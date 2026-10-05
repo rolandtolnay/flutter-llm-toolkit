@@ -54,12 +54,16 @@ Future<T> waitForData<T>(ProviderContainer container, ProviderListenable<AsyncVa
   return completer.future.whenComplete(sub.close);
 }
 
-/// Resolves when a sealed-state provider reaches [S].
+/// Resolves when a sealed-state provider reaches [S]; rethrows its error.
 Future<S> waitForState<S>(ProviderContainer container, ProviderListenable<AsyncValue<Object?>> provider) {
   final completer = Completer<S>();
   final sub = container.listen(provider, (_, next) {
-    final value = next.value;
-    if (value is S && !completer.isCompleted) completer.complete(value);
+    if (completer.isCompleted) return;
+    if (next case AsyncError(:final error, :final stackTrace)) {
+      completer.completeError(error, stackTrace);
+      return;
+    }
+    if (next.value case final S value) completer.complete(value);
   }, fireImmediately: true);
   return completer.future.whenComplete(sub.close);
 }
@@ -109,7 +113,7 @@ Future<void> useViewport(WidgetTester tester, Size size) async {
 }
 ```
 
-The unmount teardown runs before the container's dispose teardown, so widgets never outlive their providers. `pumpRouterApp` is the same shell around `MaterialApp.router(routerConfig: router.config())`; the app's real theme goes in both so layout assertions match production.
+The unmount teardown runs before the container's dispose teardown, so widgets never outlive their providers. `pumpRouterApp` is the same shell around `MaterialApp.router(routerConfig: router.config())` in this example; use the app's own root app widget and theme in both helpers so rendering and layout match production.
 
 ## Fixtures
 
@@ -217,7 +221,7 @@ class AppHarness {
 }
 ```
 
-The request log makes isolation claims one assertion: `expect(harness.protectedRequests, isEmpty)` after a denied account, or `expect(harness.protectedRequests, everyElement(endsWith(':accounts/b')))` after a switch. Routes a journey does not visit are stubbed in `TestAppRouter` with a `Scaffold(body: Text(route.name))` so the journey asserts arrival without pulling every screen's providers into the test.
+The request log makes isolation claims explicit: `expect(harness.protectedRequests, isEmpty)` after a denied account. Before switching accounts, clear the log; after the new account loads, assert `isNotEmpty` and `everyElement(endsWith(':accounts/b'))` on the log. Routes a journey does not visit are stubbed in `TestAppRouter` with a `Scaffold(body: Text(route.name))` so the journey asserts arrival without pulling every screen's providers into the test.
 
 ## Anti-Patterns (flag these)
 
