@@ -44,21 +44,21 @@ ProviderContainer createContainer({List<Override> overrides = const []}) {
   return container;
 }
 
-/// Resolves when [provider] next holds data; rethrows its error.
+/// Resolves when [provider] holds settled data; rethrows its error.
 Future<T> waitForData<T>(ProviderContainer container, ProviderListenable<AsyncValue<T>> provider) {
   final completer = Completer<T>();
   final sub = container.listen(provider, (_, next) {
-    if (completer.isCompleted) return;
+    if (completer.isCompleted || next.isLoading) return;
     next.whenOrNull(data: completer.complete, error: completer.completeError);
   }, fireImmediately: true);
   return completer.future.whenComplete(sub.close);
 }
 
-/// Resolves when a sealed-state provider reaches [S]; rethrows its error.
+/// Resolves when a sealed-state provider settles in [S]; rethrows its error.
 Future<S> waitForState<S>(ProviderContainer container, ProviderListenable<AsyncValue<Object?>> provider) {
   final completer = Completer<S>();
   final sub = container.listen(provider, (_, next) {
-    if (completer.isCompleted) return;
+    if (completer.isCompleted || next.isLoading) return;
     if (next case AsyncError(:final error, :final stackTrace)) {
       completer.completeError(error, stackTrace);
       return;
