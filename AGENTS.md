@@ -7,14 +7,14 @@ Skills and a reviewer subagent that teach coding agents how one experienced Flut
 | Path | Purpose |
 |------|---------|
 | `skills/flutter-conventions/` | Loaded before implementing Flutter code. `SKILL.md` is the always-needed rules plus a routing table; `references/` holds one file per topic. |
-| `skills/flutter-code-quality/` | The expensive-linter workflow. `references/checklist.md` is the rule list the reviewer applies. |
+| `skills/flutter-code-quality/` | The post-implementation review workflow. `references/checklist.md` is the lint-shaped rule list; the reviewer also reads `flutter-conventions` and `flutter-testing`. |
 | `skills/flutter-capture-pattern/` | Writes new knowledge back into this repo from project code. |
 | `skills/flutter-testing/` | Loaded when writing or changing tests. `SKILL.md` decides what deserves a test and at which layer; `references/` hold the shared support library, provider and widget test shapes, and live verification of the running app. |
 | `agents/flutter-code-quality-reviewer.md` | Read-only reviewer for Claude Code (`model: opus`, `effort: high`). |
-| `agents/flutter-code-quality-reviewer.pi.md` | Same body with Pi frontmatter (`openai-codex/gpt-6.1-sol`, `thinking: high`). |
+| `agents/flutter-code-quality-reviewer.pi.md` | Same body with Pi frontmatter (`openai/gpt-6.1-sol`, `thinking: high`). |
 | `templates/agents-md-flutter.md` | The `AGENTS.md` section the install prompt pastes into a project, plus what else a Flutter project's `AGENTS.md` should carry. |
 
-Both agent files must keep identical bodies; only the frontmatter differs. The reviewer locates the installed checklist itself, so nothing in the repository depends on the install location.
+Both agent files must keep identical bodies; only the frontmatter differs. The reviewer locates the installed skills directory itself, so nothing in the repository depends on the install location.
 
 ## Writing rules
 
@@ -35,4 +35,4 @@ Patterns come from production apps on gRPC, REST over Dio and Firebase backends;
 
 ## Validating changes
 
-Install into a Flutter project with the README prompt (copy mode into `.agents/skills/`), then confirm the skills are discoverable by name and the reviewer subagent finds the checklist and returns findings on a known file. For a wording change in a reference, reading the file as the target model would is enough.
+Install into a Flutter project with the README prompt (copy mode into `.agents/skills/`), then confirm the skills are discoverable by name and the reviewer subagent finds the skills and returns findings on a known file. For a wording change in a reference, reading the file as the target model would is enough.

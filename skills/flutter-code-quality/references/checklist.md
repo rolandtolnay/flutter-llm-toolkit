@@ -49,8 +49,6 @@ Opinionated rules for Flutter code in this family of apps. Each rule is a lint t
 - `.divide()` for spacing: `items.map((e) => Widget()).divide(const SizedBox(width: 8))`
 - `firstWhereOrNull` with fallback: `items.firstWhereOrNull((x) => x.isSelected) ?? items.first`
 - Map over `EnumType.values`: `SortOrder.values.map((e) => ChoiceChip(label: Text(e.label)))`
-- Prefer `.map()` with spread for list conversions: `[...items.map((e) => e.toWidget())]`
-- Guard against empty collections at method entry points before processing
 
 ## Forms & Input
 

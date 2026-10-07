@@ -7,7 +7,7 @@
 Seven years of Flutter decisions, distilled into files a coding agent can load. Three skills do the work, a fourth keeps them growing:
 
 - **`flutter-conventions`** is loaded before implementing or changing Flutter code. Its `SKILL.md` carries the rules that apply to every change (layering, folder placement, widget build structure, action providers, async UX, modern Dart) and routes to about twenty reference files for specific tasks: Riverpod, navigation, auth session, app bootstrap, startup gate, forms, lists and pagination, filters, sheets and dialogs, multi-step wizards, storage, theme, localization, logging, error handling, REST and gRPC API layers, SDK session wrappers, the shared extension kit, and design principles for state and widget APIs.
-- **`flutter-code-quality`** runs after implementation as an expensive linter. A read-only subagent (`flutter-code-quality-reviewer`) checks the changed files against `references/checklist.md`, a list of rules a static analyzer cannot express, and returns terse `file:line` findings that the implementing agent then applies.
+- **`flutter-code-quality`** runs after implementation. A read-only subagent (`flutter-code-quality-reviewer`) reads the changed files against `flutter-conventions`, `flutter-testing` and `references/checklist.md`, a list of rules a static analyzer cannot express, and returns terse `file:line` findings that the implementing agent then applies.
 - **`flutter-testing`** is loaded when writing or changing tests. Its `SKILL.md` decides what deserves a test (one case per production condition, at the layer that owns the rule) and how to write it lean; its references hold the shared `test/support/` library shape, provider and widget test patterns, and how an agent drives the running app for a one-off check.
 - **`flutter-capture-pattern`** writes a convention proven in project code back into this repository, so the knowledge base grows from real apps.
 
@@ -43,7 +43,7 @@ Repository: https://github.com/rolandtolnay/flutter-llm-toolkit.git
 ## Layout
 
 - Skills: copy each `skills/<name>/` directory whole into `.agents/skills/<name>/` (Pi and Codex read this location). For Claude Code, create relative symlinks `.claude/skills/<name> -> ../../.agents/skills/<name>`.
-- Reviewer agent: copy `agents/flutter-code-quality-reviewer.md` to `.claude/agents/flutter-code-quality-reviewer.md` and `agents/flutter-code-quality-reviewer.pi.md` to `.pi/agents/flutter-code-quality-reviewer.md`. Keep the bodies identical; only the frontmatter differs between the two. In both, replace the sentence that tells the reviewer to find the checklist with the checklist's exact installed path (`.agents/skills/flutter-code-quality/references/checklist.md` for a project install), so it reads the file directly.
+- Reviewer agent: copy `agents/flutter-code-quality-reviewer.md` to `.claude/agents/flutter-code-quality-reviewer.md` and `agents/flutter-code-quality-reviewer.pi.md` to `.pi/agents/flutter-code-quality-reviewer.md`. Keep the bodies identical; only the frontmatter differs between the two. In both, replace the sentence that tells the reviewer where the skills live with the exact installed skills directory (`.agents/skills/` for a project install), so it reads the files directly.
 - On a different OS or harness layout, keep the intent (one canonical copy, the others link to it) and tell me what you changed.
 
 ## Project instructions
@@ -67,7 +67,7 @@ Resources install as **copies into the project** (`.agents/skills/`, with `.clau
 Installed copies do not follow the repository. To refresh them:
 
 ```text
-Update my flutter-llm-toolkit installation in this project. Use the local checkout if I give one, otherwise fetch https://github.com/rolandtolnay/flutter-llm-toolkit.git into ~/toolkits/flutter-llm-toolkit. For each installed skill under .agents/skills and each reviewer agent under .claude/agents and .pi/agents, diff the installed copy against the new source (after pinning the checklist path the same way the install did) and show me files with local edits before overwriting them. Keep the .claude/skills symlinks. Verify the agent bodies still match. Report what changed.
+Update my flutter-llm-toolkit installation in this project. Use the local checkout if I give one, otherwise fetch https://github.com/rolandtolnay/flutter-llm-toolkit.git into ~/toolkits/flutter-llm-toolkit. For each installed skill under .agents/skills and each reviewer agent under .claude/agents and .pi/agents, diff the installed copy against the new source (after pinning the skills directory the same way the install did) and show me files with local edits before overwriting them. Keep the .claude/skills symlinks. Verify the agent bodies still match. Report what changed.
 ```
 
 ## Uninstall
