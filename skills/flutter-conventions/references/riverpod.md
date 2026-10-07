@@ -13,7 +13,7 @@ Riverpod 3 with code generation. This file covers the choices this codebase make
 
 - `@Riverpod(keepAlive: true)` for state that matches the app lifecycle or is expensive to rebuild: auth, current user, selected account, list providers, config.
 - Default auto-dispose for everything else, and always for providers with parameters, so each parameter value does not pin memory forever. `ref.cacheFor(duration)` (see `common_kit.md`) bridges the gap when a family needs a short grace period.
-- `ref.mounted` after every `await` inside a Notifier before touching `state` or `ref`; the provider may have been disposed or rebuilt during the await.
+- `ref.mounted` before writing `state` or using `ref` after an `await` in a Notifier method; the provider may have been disposed or rebuilt during the await. A `build()` that only awaits and returns a value needs no check: Riverpod discards the result of a disposed build.
 - `ref.onDispose` for subscriptions, stream controllers and SDK listeners created in `build`.
 - Automatic retry on error is disabled at the container (`retry: (count, error) => null`) so a failed fetch surfaces immediately instead of retrying with backoff behind a loading state.
 
@@ -27,20 +27,20 @@ class CreateItem extends _$CreateItem {
   ItemApi get _api => ref.read(itemApiProvider);
 
   @override
-  Future<ItemEntity?> build() async => null;
+  FutureOr<ItemEntity?> build() => null;
 
   Future<void> create(CreateItemDto dto) async {
     state = const AsyncValue.loading();
     final result = await AsyncValue.guard(() => _api.create(dto));
     if (!ref.mounted) return;
     state = result;
-    ref.invalidate(itemListProvider);
+    if (result.hasValue) ref.invalidate(itemListProvider);
   }
 }
 ```
 
 - `build()` returns `null`: the provider has no data until the action runs, and `isLoading` doubles as the button's loading flag.
-- `AsyncValue.guard` captures the error in state; the method returns `void` and never rethrows.
+- `AsyncValue.guard` captures the error in state; the method returns `void` and never rethrows. Riverpod itself is neutral on returning the result to the caller; this project routes every outcome through state so loading, success and error reach the screen on one path.
 - The screen observes the outcome: `ref.listen(createItemProvider, (_, next) => next.whenOrNull(data: ..., error: ...))`, or `ref.listenOnError(createItemProvider)` when success needs no handling. Guard known errors first, then null-guard the success value.
 - Several independent actions on one screen each get a provider. `GenericState` (keyed by int) covers one-off actions that would not justify a named provider.
 
@@ -50,7 +50,7 @@ After a side effect, pick one:
 
 1. Set `state` directly when the API returns the updated entity.
 2. `ref.invalidateSelf()` to refetch from the source.
-3. `ref.invalidate(otherProvider)` for every provider whose data the mutation made stale (lists after create, detail after update).
+3. `ref.invalidate(otherProvider)` for every provider whose data the mutation made stale (lists after create, detail after update); a failed call made nothing stale.
 
 Refreshing a list that already has data keeps the old items visible: `state = const AsyncLoading<T>().retainPrevious(state)` before the fetch (see `common_kit.md`). Pull-to-refresh invalidates; pagination appends.
 

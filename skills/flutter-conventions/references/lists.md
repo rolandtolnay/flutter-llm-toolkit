@@ -96,16 +96,15 @@ class ItemList extends _$ItemList {
 
   Future<void> loadMore() async {
     if (state.isLoading) return;
-    if (state.value?.hasReachedMax ?? false) return;
-
     final previous = state.value;
+    if (previous == null || previous.hasReachedMax) return;
     final revision = _listRevision;
-    state = const AsyncLoading<ItemListResult>().retainPrevious(state, isRefresh: false);
+    state = const AsyncLoading<ItemListResult>().retainPrevious(state);
 
     final account = await ref.read(selectedAccountProvider.future);
     if (!ref.mounted || revision != _listRevision) return;
     if (account == null) {
-      state = AsyncData(previous ?? const ItemListResult());
+      state = AsyncData(previous);
       return;
     }
 
@@ -114,15 +113,15 @@ class ItemList extends _$ItemList {
       final result = await _api.getItemList(
         account: account,
         filter: filter,
-        pageToken: previous?.nextPageToken,
+        pageToken: previous.nextPageToken,
       );
       return ItemListResult(
-        items: [...?previous?.items, ...result.items],
+        items: [...previous.items, ...result.items],
         nextPageToken: result.nextPageToken,
       );
     });
     if (!ref.mounted || revision != _listRevision) return;
-    state = next;
+    state = next.retainPrevious(AsyncData(previous));
   }
 }
 ```
@@ -133,7 +132,7 @@ class ItemList extends _$ItemList {
 
 ## Retaining Previous Data
 
-`retainPrevious` (defined in `common_kit.md`) wraps Riverpod's `copyWithPrevious`: `isRefresh: true` keeps content during a full refresh (pull-to-refresh), `isRefresh: false` marks pagination so the loading indicator renders at the list bottom.
+`retainPrevious` (defined in `common_kit.md`) wraps Riverpod's `copyWithPrevious`. Inside an `AsyncNotifier`, a plain `state = const AsyncLoading()` already keeps the previous value but marks it as a *reload* (`isReloading`), the flavour the widget uses to hide stale rows after a dependency change. Pagination therefore sets the loading and error states through `retainPrevious` with the default `isRefresh: true`, so the rows stay visible and the indicator renders at the list bottom. Riverpod has no public API for this transition yet (rrousselGit/riverpod#4264).
 
 ## Widget
 

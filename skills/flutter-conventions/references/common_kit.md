@@ -53,8 +53,8 @@ extension AsyncValueRetainPrevious<T> on AsyncValue<T> {
 }
 ```
 
-- Wraps Riverpod's internal `copyWithPrevious`, so it can break on a Riverpod upgrade; keep it in this one file.
-- `isRefresh: false` for pagination (`const AsyncLoading<T>().retainPrevious(state, isRefresh: false)`); see `lists.md`.
+- Wraps Riverpod's internal `copyWithPrevious`, which has no public replacement yet (rrousselGit/riverpod#4264), so it can break on a Riverpod upgrade; keep it in this one file.
+- Keep the default `isRefresh: true` for pagination so `isReloading` stays reserved for dependency changes; see `lists.md`.
 
 ## extensions/compact_map.dart
 
@@ -217,7 +217,7 @@ An action provider for one-off async calls that don't deserve their own notifier
 @riverpod
 class GenericState extends _$GenericState {
   @override
-  Future<void> build(int key) async {}
+  FutureOr<void> build(int key) {}
 
   Future<void> perform(
     Future<void> Function() perform, {

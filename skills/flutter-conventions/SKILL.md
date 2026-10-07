@@ -42,7 +42,7 @@ Details: `references/widget_style_guide.md`, `references/hooks.md`, `references/
 ## State and Actions
 
 - Data that outlives a screen lives in a provider; a widget keeps only ephemeral UI state (focus, a local toggle) in hooks.
-- Each user action is an on-demand action provider (`Future<T?> build() async => null`) whose method uses `AsyncValue.guard`, checks `ref.mounted` after awaits, and invalidates the providers it made stale. The action's `isLoading` drives the button; the screen reacts to the outcome through `ref.listen` / `ref.listenOnError`.
+- Each user action is an on-demand action provider (`FutureOr<T?> build() => null`) whose method uses `AsyncValue.guard`, checks `ref.mounted` before writing `state` after an await, and invalidates the providers it made stale. The action's `isLoading` drives the button; the screen reacts to the outcome through `ref.listen` / `ref.listenOnError`.
 - First-load errors render inline with a retry that invalidates the provider. Action errors show a toast via `listenOnError` and the user retries by tapping again. Refreshes keep existing content visible.
 - Complex state is a sealed type switched exhaustively, never a set of booleans.
 

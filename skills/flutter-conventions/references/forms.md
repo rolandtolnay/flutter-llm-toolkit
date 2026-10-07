@@ -15,7 +15,7 @@ class CreateCustomer extends _$CreateCustomer {
   CustomerApi get _api => ref.read(customerApiProvider);
 
   @override
-  Future<CustomerEntity?> build() async => null; // null = idle
+  FutureOr<CustomerEntity?> build() => null; // null = idle
 
   Future<void> createCustomer(CreateCustomerDto dto) async {
     state = const AsyncLoading();
@@ -27,7 +27,7 @@ class CreateCustomer extends _$CreateCustomer {
     if (!ref.mounted) return;
 
     state = result;
-    ref.invalidate(customerListProvider);
+    if (result.hasValue) ref.invalidate(customerListProvider);
   }
 }
 ```
