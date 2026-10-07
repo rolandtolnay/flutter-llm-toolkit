@@ -49,6 +49,7 @@ Opinionated rules for Flutter code in this family of apps. Each rule is a lint t
 - `.divide()` for spacing: `items.map((e) => Widget()).divide(const SizedBox(width: 8))`
 - `firstWhereOrNull` with fallback: `items.firstWhereOrNull((x) => x.isSelected) ?? items.first`
 - Map over `EnumType.values`: `SortOrder.values.map((e) => ChoiceChip(label: Text(e.label)))`
+- Return early on empty input only where the body would otherwise crash or compute a wrong value (`.first`, `.reduce`, averages); sums, maps and filters need no guard
 
 ## Forms & Input
 
